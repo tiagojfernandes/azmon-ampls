@@ -148,7 +148,6 @@ resource "azurerm_virtual_machine_extension" "azure_monitor_agent_windows" {
   tags = var.tags
 }
 
-/*
 # Custom Script Extension for .NET Core App Deployment
 resource "azurerm_virtual_machine_extension" "windows_vm_custom_script" {
   name                 = "InstallDotNetApp"
@@ -158,7 +157,10 @@ resource "azurerm_virtual_machine_extension" "windows_vm_custom_script" {
   type_handler_version = "1.10"
 
   settings = jsonencode({
-    commandToExecute = "powershell.exe -ExecutionPolicy Unrestricted -Command \"[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://dot.net/v1/dotnet-install.ps1' -OutFile 'dotnet-install.ps1'; & .\\dotnet-install.ps1 -Channel 8.0; $env:PATH += ';C:\\Users\\${var.admin_username}\\.dotnet'; dotnet new console -n SampleApp; Set-Location SampleApp; dotnet add package Microsoft.ApplicationInsights; dotnet add package Microsoft.ApplicationInsights.DependencyCollector; dotnet add package Microsoft.Extensions.Logging.ApplicationInsights; Set-Content -Path Program.cs -Value 'using Microsoft.ApplicationInsights; using Microsoft.ApplicationInsights.Extensibility; using System.Collections.Generic; using System.Threading.Tasks; using System; var config = new TelemetryConfiguration(); config.ConnectionString = \\\"${var.application_insights_connection_string}\\\"; var client = new TelemetryClient(config); for(int i = 0; i < 10; i++) { client.TrackEvent($$\\\"SampleEvent_{i}\\\", new Dictionary<string, string> { [\\\"iteration\\\"] = i.ToString() }); Console.WriteLine($$\\\"Sent event {i}\\\"); await Task.Delay(1000); } client.Flush(); await Task.Delay(2000);'; dotnet run\""
+    fileUris = [
+      "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-dotnet-app.ps1"
+    ]
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File install-dotnet-app.ps1 -ApplicationInsightsConnectionString \"${var.application_insights_connection_string}\" -AdminUsername \"${var.admin_username}\""
   })
 
   depends_on = [
@@ -167,8 +169,6 @@ resource "azurerm_virtual_machine_extension" "windows_vm_custom_script" {
 
   tags = var.tags
 }
-
-*/
 
 # Azure Monitor Agent Extension for Ubuntu VM
 resource "azurerm_virtual_machine_extension" "azure_monitor_agent_linux" {
@@ -195,7 +195,10 @@ resource "azurerm_virtual_machine_extension" "ubuntu_vm_custom_script" {
   type_handler_version = "2.0"
 
   settings = jsonencode({
-    commandToExecute = "sudo apt-get update -y && sudo apt-get install -y python3-pip curl && pip3 install opentelemetry-api opentelemetry-sdk azure-monitor-opentelemetry-exporter flask opentelemetry-instrumentation-flask && cat > /home/azureuser/app.py << 'PYEOF'\nimport time\nfrom opentelemetry import trace\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\nfrom azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter\n\ntracer_provider = TracerProvider()\nexporter = AzureMonitorTraceExporter(connection_string=\"${var.application_insights_connection_string}\")\ntracer_provider.add_span_processor(BatchSpanProcessor(exporter))\ntrace.set_tracer_provider(tracer_provider)\ntracer = trace.get_tracer(__name__)\n\nfor i in range(10):\n    with tracer.start_as_current_span(f\"work-span-{i}\"):\n        print(f\"Iteration {i}\")\n        time.sleep(1)\nPYEOF\n&& mkdir -p /home/azureuser/flask-sample && cat > /home/azureuser/flask-sample/app.py << 'FLASKEOF'\nimport os\nfrom flask import Flask\nfrom opentelemetry import trace\nfrom opentelemetry.sdk.trace import TracerProvider\nfrom opentelemetry.sdk.trace.export import BatchSpanProcessor\nfrom azure.monitor.opentelemetry.exporter import AzureMonitorTraceExporter\nfrom opentelemetry.instrumentation.flask import FlaskInstrumentor\n\nos.environ[\"AZURE_MONITOR_CONNECTION_STRING\"] = \"${var.application_insights_connection_string}\"\nprovider = TracerProvider()\nexporter = AzureMonitorTraceExporter(connection_string=os.environ[\"AZURE_MONITOR_CONNECTION_STRING\"])\nprovider.add_span_processor(BatchSpanProcessor(exporter))\ntrace.set_tracer_provider(provider)\n\napp = Flask(__name__)\nFlaskInstrumentor().instrument_app(app, tracer_provider=provider)\n\n@app.route(\"/\")\ndef index():\n    return \"Hello from Flask with OpenTelemetry!\"\n\n@app.route(\"/sleep\")\ndef sleep():\n    import time\n    time.sleep(0.5)\n    return \"Slept for 0.5 seconds\"\n\nif __name__ == \"__main__\":\n    app.run(host=\"0.0.0.0\", port=5000)\nFLASKEOF\n&& chown azureuser:azureuser /home/azureuser/app.py && chown -R azureuser:azureuser /home/azureuser/flask-sample && nohup sudo -u azureuser python3 /home/azureuser/app.py > /dev/null 2>&1 & && cd /home/azureuser/flask-sample && nohup sudo -u azureuser python3 app.py > flask.log 2>&1 & && sleep 10 && while true; do curl -s http://127.0.0.1:5000/ > /dev/null && sleep 5 && curl -s http://127.0.0.1:5000/sleep > /dev/null && sleep 5; done > /dev/null 2>&1 &"
+    fileUris = [
+      "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-python-apps.sh"
+    ]
+    commandToExecute = "bash install-python-apps.sh \"${var.application_insights_connection_string}\""
   })
 
   depends_on = [
