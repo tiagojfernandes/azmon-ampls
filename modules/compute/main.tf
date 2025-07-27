@@ -160,7 +160,7 @@ resource "azurerm_virtual_machine_extension" "windows_vm_custom_script" {
     fileUris = [
       "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-dotnet-app.ps1"
     ]
-    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File install-dotnet-app.ps1 -ApplicationInsightsConnectionString \"${var.application_insights_connection_string}\" -AdminUsername \"${var.admin_username}\""
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File install-dotnet-app.ps1 -ConnectionString \"${var.application_insights_connection_string}\""
   })
 
   depends_on = [
