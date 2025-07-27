@@ -438,7 +438,7 @@ resource "azurerm_monitor_data_collection_rule" "ubuntu" {
   data_sources {
     syslog {
       streams          = ["Microsoft-Syslog"]
-      facility_names   = var.syslog_facility_names
+      facility_names   = ["user", "mail", "daemon", "auth", "syslog", "lpr", "news", "uucp", "ftp", "ntp", "audit", "alert", "mark", "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]
       log_levels       = ["Critical", "Alert", "Emergency", "Error", "Warning", "Notice", "Info", "Debug"]
       name             = "syslogDataSource"
     }
