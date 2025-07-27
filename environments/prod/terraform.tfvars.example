@@ -8,7 +8,7 @@ location           = "North Europe"
 
 # VM Configuration
 admin_username    = "azureuser"
-vm_size          = "Standard_B1s"  # Small size for cost optimization
+vm_size          = "Standard_B2s"  # Supports Gen2 VMs (2 vCPUs, 4GB RAM)
 enable_public_ips = true  # Set to false for production, use Azure Bastion instead
 
 # Network Configuration (adjust if needed)
