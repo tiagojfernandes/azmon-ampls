@@ -1,0 +1,105 @@
+# Azure Monitor AMPLS Lab - Production Environment
+# This configuration creates a lab environment to demonstrate
+# Azure Monitor private connectivity using AMPLS with a modular structure
+
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "~>3.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = "~>3.1"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+}
+
+# Resource Group
+resource "azurerm_resource_group" "main" {
+  name     = var.resource_group_name
+  location = var.location
+
+  tags = var.tags
+}
+
+# Network Module
+module "network" {
+  source = "../../modules/network"
+
+  prefix              = var.prefix
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  hub_vnet_address_space               = var.hub_vnet_address_space
+  windows_spoke_vnet_address_space     = var.windows_spoke_vnet_address_space
+  ubuntu_spoke_vnet_address_space      = var.ubuntu_spoke_vnet_address_space
+  hub_ampls_subnet_address_prefixes    = var.hub_ampls_subnet_address_prefixes
+  windows_spoke_vm_subnet_address_prefixes = var.windows_spoke_vm_subnet_address_prefixes
+  ubuntu_spoke_vm_subnet_address_prefixes  = var.ubuntu_spoke_vm_subnet_address_prefixes
+
+  tags = var.tags
+}
+
+# Monitor Module
+module "monitor" {
+  source = "../../modules/monitor"
+
+  prefix              = var.prefix
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  ampls_subnet_id = module.network.hub_ampls_subnet_id
+  hub_vnet_id     = module.network.hub_vnet_id
+  windows_spoke_vnet_id = module.network.windows_spoke_vnet_id
+  ubuntu_spoke_vnet_id  = module.network.ubuntu_spoke_vnet_id
+
+  log_analytics_sku             = var.log_analytics_sku
+  log_analytics_retention_days  = var.log_analytics_retention_days
+  perf_counter_sampling_frequency = var.perf_counter_sampling_frequency
+
+  depends_on = [
+    module.network
+  ]
+
+  tags = var.tags
+}
+
+# Compute Module
+module "compute" {
+  source = "../../modules/compute"
+
+  prefix              = var.prefix
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  windows_vm_subnet_id    = module.network.windows_spoke_vm_subnet_id
+  ubuntu_vm_subnet_id     = module.network.ubuntu_spoke_vm_subnet_id
+  data_collection_rule_id = module.monitor.data_collection_rule_id
+  ubuntu_data_collection_rule_id = module.monitor.ubuntu_data_collection_rule_id
+
+  # Application Insights configuration
+  application_insights_connection_string = module.monitor.connection_string
+
+  admin_username    = var.admin_username
+  vm_size           = var.vm_size
+  enable_public_ips = var.enable_public_ips
+
+  # Auto-shutdown configuration
+  enable_autoshutdown                    = var.enable_autoshutdown
+  autoshutdown_time                     = var.autoshutdown_time
+  autoshutdown_timezone                 = var.autoshutdown_timezone
+  autoshutdown_notification_enabled     = var.autoshutdown_notification_enabled
+  autoshutdown_notification_email       = var.autoshutdown_notification_email
+
+  depends_on = [
+    module.network,
+    module.monitor
+  ]
+
+  tags = var.tags
+}

@@ -1,0 +1,198 @@
+// Azure Monitor AMPLS Lab - Data Ingestion Validation Queries
+// Copy and paste these queries into the Log Analytics Workspace Logs section
+
+// ==== Basic Connectivity Tests ====
+
+// 1. Check for any data from VMs in the last hour
+Heartbeat
+| where TimeGenerated > ago(1h)
+| summarize LastHeartbeat = max(TimeGenerated) by Computer, OSType
+| order by LastHeartbeat desc
+
+// 2. Verify Azure Monitor Agent is reporting
+Heartbeat
+| where TimeGenerated > ago(1h) and Category == "Azure Monitor Agent"
+| summarize count() by Computer
+| order by Computer
+
+// ==== Performance Data Validation ====
+
+// 3. Check CPU performance data
+Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "Processor Information" and CounterName == "% Processor Time"
+| where InstanceName == "_Total"
+| summarize AvgCPU = avg(CounterValue) by Computer
+| order by Computer
+
+// 4. Check memory utilization
+Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "Memory" and CounterName == "% Committed Bytes In Use"
+| summarize AvgMemory = avg(CounterValue) by Computer
+| order by Computer
+
+// 5. Check disk space
+Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "LogicalDisk" and CounterName == "% Free Space"
+| where InstanceName == "C:" or InstanceName == "/"
+| summarize AvgFreeSpace = avg(CounterValue) by Computer, InstanceName
+| order by Computer
+
+// 6. All performance counters summary
+Perf
+| where TimeGenerated > ago(1h)
+| summarize Count = count() by Computer, ObjectName, CounterName
+| order by Computer, ObjectName, CounterName
+
+// ==== Windows Event Log Validation ====
+
+// 7. Check Windows Event logs (Windows VMs only)
+Event
+| where TimeGenerated > ago(1h)
+| summarize Count = count() by Computer, EventLog, EventLevelName
+| order by Computer, EventLog, EventLevelName
+
+// 8. Recent Windows errors and warnings
+Event
+| where TimeGenerated > ago(1h)
+| where EventLevelName in ("Error", "Warning")
+| project TimeGenerated, Computer, EventLog, EventLevelName, RenderedDescription
+| order by TimeGenerated desc
+| take 20
+
+// ==== Syslog Validation (Linux VMs) ====
+
+// 9. Check Syslog data (Linux VMs only)
+Syslog
+| where TimeGenerated > ago(1h)
+| summarize Count = count() by Computer, Facility, SeverityLevel
+| order by Computer, Facility, SeverityLevel
+
+// 10. Recent Syslog entries
+Syslog
+| where TimeGenerated > ago(1h)
+| project TimeGenerated, Computer, Facility, SeverityLevel, SyslogMessage
+| order by TimeGenerated desc
+| take 20
+
+// ==== Data Collection Rule Validation ====
+
+// 11. Check data collection rule associations
+// This helps verify DCR is properly configured
+InsightsMetrics
+| where TimeGenerated > ago(1h)
+| summarize Count = count() by Computer, Namespace, Name
+| order by Computer, Namespace, Name
+
+// 12. Azure Monitor Agent status and version
+Heartbeat
+| where TimeGenerated > ago(1h)
+| extend AgentVersion = extract(@"Microsoft Monitoring Agent version ([\d\.]+)", 1, Version)
+| summarize LastHeartbeat = max(TimeGenerated) by Computer, OSType, Version, AgentVersion
+| order by Computer
+
+// ==== Network and Connectivity Validation ====
+
+// 13. Check for Azure Monitor Agent health events
+Event
+| where TimeGenerated > ago(1h)
+| where Source == "Microsoft-Windows-AzureMonitorAgent" or Source contains "AzureMonitor"
+| project TimeGenerated, Computer, EventLevelName, RenderedDescription
+| order by TimeGenerated desc
+
+// 14. Validate data ingestion rate over time
+union Perf, Event, Syslog, Heartbeat
+| where TimeGenerated > ago(1h)
+| summarize Count = count() by Computer, bin(TimeGenerated, 5m)
+| render timechart
+
+// ==== Troubleshooting Queries ====
+
+// 15. Check for missing computers (should see both Windows and Linux VMs)
+let ExpectedComputers = dynamic(["windows-vm", "ubuntu-vm"]); // Adjust names as needed
+Heartbeat
+| where TimeGenerated > ago(1h)
+| summarize LastSeen = max(TimeGenerated) by Computer
+| join kind=rightouter (
+    range i from 0 to array_length(ExpectedComputers) - 1 step 1
+    | project Computer = tostring(ExpectedComputers[i])
+) on Computer
+| project Computer, LastSeen, Status = iif(isnull(LastSeen), "Missing", "Active")
+| order by Status desc, Computer
+
+// 16. Data ingestion summary by table
+union withsource=TableName *
+| where TimeGenerated > ago(1h)
+| summarize Count = count() by TableName, Computer
+| order by TableName, Computer
+
+// 17. Check for any authentication or connectivity errors
+Event
+| where TimeGenerated > ago(1h)
+| where RenderedDescription contains "authentication" or RenderedDescription contains "connection"
+| project TimeGenerated, Computer, EventLog, EventLevelName, RenderedDescription
+| order by TimeGenerated desc
+
+// ==== Performance Over Time ====
+
+// 18. CPU usage trend over the last hour
+Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "Processor Information" and CounterName == "% Processor Time"
+| where InstanceName == "_Total"
+| summarize AvgCPU = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)
+| render timechart
+
+// 19. Memory usage trend over the last hour
+Perf
+| where TimeGenerated > ago(1h)
+| where ObjectName == "Memory" and CounterName == "% Committed Bytes In Use"
+| summarize AvgMemory = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)
+| render timechart
+
+// ==== Final Validation ====
+
+// 20. Overall health check - all data types
+let timeRange = ago(1h);
+let computers = Heartbeat | where TimeGenerated > timeRange | distinct Computer;
+computers
+| join kind=leftouter (
+    Perf | where TimeGenerated > timeRange | summarize PerfCount = count() by Computer
+) on Computer
+| join kind=leftouter (
+    Event | where TimeGenerated > timeRange | summarize EventCount = count() by Computer
+) on Computer
+| join kind=leftouter (
+    Syslog | where TimeGenerated > timeRange | summarize SyslogCount = count() by Computer
+) on Computer
+| join kind=leftouter (
+    Heartbeat | where TimeGenerated > timeRange | summarize HeartbeatCount = count() by Computer
+) on Computer
+| project Computer, 
+    PerfCount = iif(isnull(PerfCount), 0, PerfCount),
+    EventCount = iif(isnull(EventCount), 0, EventCount),
+    SyslogCount = iif(isnull(SyslogCount), 0, SyslogCount),
+    HeartbeatCount = iif(isnull(HeartbeatCount), 0, HeartbeatCount)
+| extend TotalDataPoints = PerfCount + EventCount + SyslogCount + HeartbeatCount
+| order by Computer
+
+// ==== Expected Results ====
+/*
+After running these queries, you should expect to see:
+
+1. Heartbeat data from both Windows and Linux VMs
+2. Performance counter data (CPU, Memory, Disk) from both VMs
+3. Windows Event Log data from the Windows VM
+4. Syslog data from the Linux VM
+5. Regular data ingestion every few minutes
+6. No authentication or connectivity errors related to Azure Monitor
+
+If any queries return no results:
+- Wait 10-15 minutes after VM deployment for initial data
+- Check that Azure Monitor Agent is running on the VMs
+- Verify private endpoint DNS resolution
+- Ensure Data Collection Rules are properly associated
+- Check Network Security Group rules allow HTTPS traffic
+*/
