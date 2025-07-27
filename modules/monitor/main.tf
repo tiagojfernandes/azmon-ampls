@@ -112,7 +112,6 @@ resource "azurerm_private_endpoint" "ampls" {
       azurerm_private_dns_zone.oms.id,
       azurerm_private_dns_zone.ods.id,
       azurerm_private_dns_zone.agentsvc.id,
-      azurerm_private_dns_zone.blob.id,
       azurerm_private_dns_zone.applicationinsights.id
     ]
   }
@@ -122,7 +121,6 @@ resource "azurerm_private_endpoint" "ampls" {
     azurerm_private_dns_zone.oms,
     azurerm_private_dns_zone.ods,
     azurerm_private_dns_zone.agentsvc,
-    azurerm_private_dns_zone.blob,
     azurerm_private_dns_zone.applicationinsights,
     azurerm_monitor_private_link_scope.main
   ]

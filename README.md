@@ -1,53 +1,10 @@
 # Azure Monitor AMPLS Lab Environment
 
-This Terraform configuration creates a comprehensive Azure Monitor Private Link Service (AMPLS) lab environment that demonstrates how to configure Azure Monitor to accept data only from private networks. The project uses a modular structure following Terraform best practices.
+## ⚠️ UNDER DEVELOPMENT ⚠️
 
-## Project Structure
+**This project is currently under active development and is not ready for production use.**
 
-```
-azmon-ampls/
-├── modules/
-│   ├── network/          # VNets, subnets, NSGs, peering
-│   ├── monitor/          # Log Analytics, AMPLS, private endpoints, DNS
-│   └── compute/          # Windows & Ubuntu VMs with Azure Monitor Agent
-├── environments/
-│   └── prod/             # Production environment configuration
-├── scripts/              # Validation and testing scripts
-└── README.md
-```
-
-## Architecture Overview
-
-The lab environment consists of:
-
-- **Hub-Spoke Network Architecture**: Two VNets connected via peering to simulate real-world scenarios
-- **Azure Monitor Private Link Service (AMPLS)**: Configured to only accept private traffic
-- **Log Analytics Workspace**: Connected to AMPLS with private-only ingestion and query access
-- **Virtual Machines**: Windows Server 2022 and Ubuntu 22.04 LTS with Azure Monitor Agent
-- **Private DNS Zones**: For proper Azure Monitor service resolution
-- **Data Collection Rules**: Configured to collect performance counters, Windows events, and syslog
-
-## Modules Overview
-
-### Network Module (`modules/network/`)
-- **Hub VNet**: Hosts the AMPLS private endpoint
-- **Spoke VNet**: Hosts the virtual machines
-- **VNet Peering**: Connects hub and spoke for realistic architecture
-- **Network Security Groups**: Basic security rules for VM access
-- **Subnets**: Properly segmented for different workloads
-
-### Monitor Module (`modules/monitor/`)
-- **Log Analytics Workspace**: Private-only configuration
-- **Azure Monitor Private Link Scope**: Central AMPLS configuration
-- **Private Endpoint**: Connects AMPLS to the hub network
-- **Private DNS Zones**: All required zones for Azure Monitor services
-- **Data Collection Rules**: Automated telemetry collection configuration
-
-### Compute Module (`modules/compute/`)
-- **Windows Server 2022 VM**: With Azure Monitor Agent
-- **Ubuntu 22.04 LTS VM**: With Azure Monitor Agent
-- **Network Interfaces**: Connected to the spoke subnet
-- **Public IPs**: Optional for initial access (configurable)
+Please check back later for the complete documentation and implementation.
 - **Agent Extensions**: Automated AMA deployment
 
 ## Prerequisites
