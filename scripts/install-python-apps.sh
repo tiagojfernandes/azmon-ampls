@@ -20,10 +20,9 @@ sudo apt-get install -y python3-pip
 pip3 install \
   opentelemetry-api \
   opentelemetry-sdk \
-  opentelemetry-sdk-metrics \
-  opentelemetry-sdk-logs \
   azure-monitor-opentelemetry-exporter \
-  opentelemetry-instrumentation-requests
+  flask \
+  opentelemetry-instrumentation-flask
 
 # drop in the enhanced app
 cat > ~/app.py <<'EOF'
