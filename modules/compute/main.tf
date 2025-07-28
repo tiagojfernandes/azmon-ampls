@@ -243,6 +243,30 @@ resource "azurerm_monitor_data_collection_rule_association" "ubuntu_vm" {
   ]
 }
 
+# Associate Data Collection Endpoint with Windows VM
+resource "azurerm_monitor_data_collection_rule_association" "windows_vm_dce" {
+  name                        = "${var.prefix}-dcra-windows-dce"
+  target_resource_id          = azurerm_windows_virtual_machine.windows_vm.id
+  data_collection_endpoint_id = var.data_collection_endpoint_id
+  
+  depends_on = [
+    azurerm_windows_virtual_machine.windows_vm,
+    azurerm_virtual_machine_extension.azure_monitor_agent_windows
+  ]
+}
+
+# Associate Data Collection Endpoint with Ubuntu VM
+resource "azurerm_monitor_data_collection_rule_association" "ubuntu_vm_dce" {
+  name                        = "${var.prefix}-dcra-ubuntu-dce"
+  target_resource_id          = azurerm_linux_virtual_machine.ubuntu_vm.id
+  data_collection_endpoint_id = var.data_collection_endpoint_id
+  
+  depends_on = [
+    azurerm_linux_virtual_machine.ubuntu_vm,
+    azurerm_virtual_machine_extension.azure_monitor_agent_linux
+  ]
+}
+
 # Auto-shutdown for Windows VM
 resource "azurerm_dev_test_global_vm_shutdown_schedule" "windows_vm_shutdown" {
   count              = var.enable_autoshutdown ? 1 : 0

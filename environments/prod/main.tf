@@ -81,6 +81,7 @@ module "compute" {
   ubuntu_vm_subnet_id     = module.network.ubuntu_spoke_vm_subnet_id
   data_collection_rule_id = module.monitor.data_collection_rule_id
   ubuntu_data_collection_rule_id = module.monitor.ubuntu_data_collection_rule_id
+  data_collection_endpoint_id = module.monitor.data_collection_endpoint_id
 
   # Application Insights configuration
   application_insights_connection_string = module.monitor.connection_string

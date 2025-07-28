@@ -33,6 +33,11 @@ variable "ubuntu_data_collection_rule_id" {
   type        = string
 }
 
+variable "data_collection_endpoint_id" {
+  description = "ID of the data collection endpoint to associate with VMs"
+  type        = string
+}
+
 variable "admin_username" {
   description = "Admin username for VMs"
   type        = string
