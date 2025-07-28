@@ -196,7 +196,7 @@ resource "azurerm_virtual_machine_extension" "ubuntu_vm_custom_script" {
 
   settings = jsonencode({
     fileUris = [
-      "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-python-apps.sh"
+      "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-python-apps.sh?t=${timestamp()}"
     ]
     commandToExecute = "bash install-python-apps.sh \"${var.application_insights_connection_string}\""
   })
@@ -206,6 +206,17 @@ resource "azurerm_virtual_machine_extension" "ubuntu_vm_custom_script" {
   ]
 
   tags = var.tags
+}
+
+# Reboot Ubuntu VM after custom script installation
+resource "null_resource" "ubuntu_vm_reboot" {
+  provisioner "local-exec" {
+    command = "az vm run-command invoke --resource-group ${var.resource_group_name} --name ${var.prefix}-ubuntu-vm --command-id RunShellScript --scripts 'sudo reboot'"
+  }
+
+  depends_on = [
+    azurerm_virtual_machine_extension.ubuntu_vm_custom_script
+  ]
 }
 
 # Associate Data Collection Rule with Windows VM

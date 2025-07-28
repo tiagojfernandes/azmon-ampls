@@ -101,7 +101,7 @@ resource "azurerm_private_endpoint" "ampls" {
   private_service_connection {
     name                           = "${var.prefix}-ampls-psc"
     private_connection_resource_id = azurerm_monitor_private_link_scope.main.id
-    subresource_names              = []
+    subresource_names              = ["azuremonitor"]
     is_manual_connection           = false
   }
 
@@ -122,7 +122,22 @@ resource "azurerm_private_endpoint" "ampls" {
     azurerm_private_dns_zone.ods,
     azurerm_private_dns_zone.agentsvc,
     azurerm_private_dns_zone.applicationinsights,
-    azurerm_monitor_private_link_scope.main
+    azurerm_monitor_private_link_scope.main,
+    azurerm_private_dns_zone_virtual_network_link.monitor_hub,
+    azurerm_private_dns_zone_virtual_network_link.monitor_windows_spoke,
+    azurerm_private_dns_zone_virtual_network_link.monitor_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.oms_hub,
+    azurerm_private_dns_zone_virtual_network_link.oms_windows_spoke,
+    azurerm_private_dns_zone_virtual_network_link.oms_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.ods_hub,
+    azurerm_private_dns_zone_virtual_network_link.ods_windows_spoke,
+    azurerm_private_dns_zone_virtual_network_link.ods_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.agentsvc_hub,
+    azurerm_private_dns_zone_virtual_network_link.agentsvc_windows_spoke,
+    azurerm_private_dns_zone_virtual_network_link.agentsvc_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.applicationinsights_hub,
+    azurerm_private_dns_zone_virtual_network_link.applicationinsights_windows_spoke,
+    azurerm_private_dns_zone_virtual_network_link.applicationinsights_ubuntu_spoke
   ]
 
   tags = var.tags
@@ -379,6 +394,12 @@ resource "azurerm_monitor_private_link_scoped_service" "dce" {
   resource_group_name = var.resource_group_name
   scope_name          = azurerm_monitor_private_link_scope.main.name
   linked_resource_id  = azurerm_monitor_data_collection_endpoint.main.id
+
+  depends_on = [
+    azurerm_monitor_private_link_scope.main,
+    azurerm_monitor_data_collection_endpoint.main,
+    azurerm_private_endpoint.ampls
+  ]
 }
 
 # Data Collection Rule for Azure Monitor Agent
@@ -387,8 +408,6 @@ resource "azurerm_monitor_data_collection_rule" "main" {
   resource_group_name         = var.resource_group_name
   location                    = var.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.main.id
-  kind                        = "Windows"
-  description                 = "Data collection rule for Windows performance counters"
 
   destinations {
     log_analytics {
@@ -407,11 +426,19 @@ resource "azurerm_monitor_data_collection_rule" "main" {
       streams                       = ["Microsoft-Perf"]
       sampling_frequency_in_seconds = 60
       counter_specifiers = [
-        "\\Processor Information(_Total)\\% Processor Time"
+        "\\Processor Information(_Total)\\% Processor Time",
+        "\\Memory\\Available MBytes",
+        "\\LogicalDisk(_Total)\\% Free Space"
       ]
       name = "perfCounterDataSource"
     }
   }
+
+  depends_on = [
+    azurerm_log_analytics_workspace.main,
+    azurerm_monitor_data_collection_endpoint.main,
+    azurerm_monitor_private_link_scoped_service.dce
+  ]
 
   tags = var.tags
 }
@@ -422,8 +449,6 @@ resource "azurerm_monitor_data_collection_rule" "ubuntu" {
   resource_group_name         = var.resource_group_name
   location                    = var.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.main.id
-  kind                        = "Linux"
-  description                 = "Data collection rule for Ubuntu syslog"
 
   destinations {
     log_analytics {
@@ -440,11 +465,17 @@ resource "azurerm_monitor_data_collection_rule" "ubuntu" {
   data_sources {
     syslog {
       streams          = ["Microsoft-Syslog"]
-      facility_names   = ["user", "mail", "daemon", "auth", "syslog", "lpr", "news", "uucp", "ftp", "ntp", "audit", "alert", "mark", "local0", "local1", "local2", "local3", "local4", "local5", "local6", "local7"]
-      log_levels       = ["Critical", "Alert", "Emergency", "Error", "Warning", "Notice", "Info", "Debug"]
+      facility_names   = ["auth", "daemon", "syslog", "user"]
+      log_levels       = ["Critical", "Error", "Warning", "Info"]
       name             = "syslogDataSource"
     }
   }
+
+  depends_on = [
+    azurerm_log_analytics_workspace.main,
+    azurerm_monitor_data_collection_endpoint.main,
+    azurerm_monitor_private_link_scoped_service.dce
+  ]
 
   tags = var.tags
 }

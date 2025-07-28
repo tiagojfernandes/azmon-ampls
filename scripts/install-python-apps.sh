@@ -77,6 +77,12 @@ echo "→ Flask (CLI) up on port 5000."
 python3 -m venv "$MANUALDIR/.venv"
 source "$MANUALDIR/.venv/bin/activate"
 
+pip install --upgrade pip
+pip install \
+  opentelemetry-api \
+  opentelemetry-sdk \
+  azure-monitor-opentelemetry-exporter
+
 cat > "$MANUALDIR/app.py" <<'EOF'
 import os, time, logging
 from random import random
