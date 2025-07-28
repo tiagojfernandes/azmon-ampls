@@ -156,7 +156,7 @@ if ! grep -q "CALL_MANUAL_APP_15S" "$CRON_TMP"; then
 cat >> "$CRON_TMP" <<'EOF'
 # CALL_MANUAL_APP_15S: run manual sample 4/min (every 15s)
 SHELL=/bin/bash
-* * * * * . /etc/environment && for i in {1..4}; do python3 /home/azureuser/otel-samples/manual-samples/app.py >> /home/azureuser/otel-samples/manual-samples/app.log 2>&1; sleep 15; done
+* * * * * . /etc/environment && for i in {1..4}; do nohup "/home/azureuser/otel-samples/manual-samples/.venv/bin/python" "/home/azureuser/otel-samples/manual-samples/app.py" > "/home/azureuser/otel-samples/manual-samples/app.log" 2>&1 &; sleep 15; done
 EOF
 fi
 
