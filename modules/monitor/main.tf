@@ -101,7 +101,7 @@ resource "azurerm_private_endpoint" "ampls" {
   private_service_connection {
     name                           = "${var.prefix}-ampls-psc"
     private_connection_resource_id = azurerm_monitor_private_link_scope.main.id
-    subresource_names              = ["azuremonitor"]
+    subresource_names              = []
     is_manual_connection           = false
   }
 
@@ -387,6 +387,8 @@ resource "azurerm_monitor_data_collection_rule" "main" {
   resource_group_name         = var.resource_group_name
   location                    = var.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.main.id
+  kind                        = "Windows"
+  description                 = "Data collection rule for Windows performance counters"
 
   destinations {
     log_analytics {
@@ -420,6 +422,8 @@ resource "azurerm_monitor_data_collection_rule" "ubuntu" {
   resource_group_name         = var.resource_group_name
   location                    = var.location
   data_collection_endpoint_id = azurerm_monitor_data_collection_endpoint.main.id
+  kind                        = "Linux"
+  description                 = "Data collection rule for Ubuntu syslog"
 
   destinations {
     log_analytics {
