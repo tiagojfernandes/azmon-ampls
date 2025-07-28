@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Set HOME if not already set (needed for VM custom script extension)
+export HOME=${HOME:-/home/azureuser}
+
 if [[ $# -lt 1 ]]; then
   cat <<EOF
 Usage: $0 <APPLICATION_INSIGHTS_CONNECTION_STRING>
 Deploys two samples:
-  1) Flask app with CLI‑based OpenTelemetry injection  
-  2) Manual Python “workload” with hand‑wired traces/metrics/logs
+  1) Flask app with CLI-based OpenTelemetry injection  
+  2) Manual Python “workload” with hand-wired traces/metrics/logs
 
 Both will restart on reboot via cron.
 EOF
@@ -21,7 +24,7 @@ APPLICATIONINSIGHTS_CONNECTION_STRING=$AI_CONN_STR
 EOF
 
 
-BASE_DIR="$HOME/otel-samples"
+BASE_DIR="/home/azureuser/otel-samples"
 echo "Creating base directory at $BASE_DIR"
 mkdir -p "$BASE_DIR"
 
@@ -136,7 +139,7 @@ crontab -l 2>/dev/null > "$CRON_TMP" || true
 # 1) Cron job for Flask (assuming port 5000)
 if ! grep -q "CALL_FLASK_APP_15S" "$CRON_TMP"; then
   cat >> "$CRON_TMP" <<'EOF'
-# CALL_FLASK_APP_15S: hit Flask endpoint 4×/min (every 15 s)
+# CALL_FLASK_APP_15S: hit Flask endpoint 4/min (every 15s)
 SHELL=/bin/bash
 * * * * * . /etc/environment && for i in {1..4}; do curl -s http://127.0.0.1:5000/ > /dev/null; sleep 15; done
 EOF
@@ -145,7 +148,7 @@ fi
 # 2) Cron job for manual sample (using the venv Python)
 if ! grep -q "CALL_MANUAL_APP_15S" "$CRON_TMP"; then
 cat >> "$CRON_TMP" <<'EOF'
-# CALL_MANUAL_APP_15S: run manual‑sample 4×/min (every 15s)
+# CALL_MANUAL_APP_15S: run manual sample 4/min (every 15s)
 SHELL=/bin/bash
 * * * * * . /etc/environment && for i in {1..4}; do python3 /home/azureuser/otel-samples/manual-samples/app.py >> /home/azureuser/otel-samples/manual-samples/app.log 2>&1; sleep 15; done
 EOF
@@ -154,8 +157,3 @@ fi
 crontab "$CRON_TMP"
 rm "$CRON_TMP"
 echo "Cron jobs updated to call both apps every 15s."
-
-
-# ─── Reboot at end so env‑vars take effect everywhere ────────────────────────
-echo "Rebooting now to pick up environment changes…"
-sudo reboot
