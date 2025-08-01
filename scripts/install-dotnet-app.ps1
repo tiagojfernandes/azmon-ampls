@@ -140,7 +140,10 @@ if (-not (Get-ScheduledTask -TaskName $simTaskName -ErrorAction SilentlyContinue
 
 
 # 12) Start the process 
-Start-Process -FilePath 'Powershell.exe' -ArgumentList "-WindowStyle Hidden -File `"$launcher`"" 
+Start-Process -FilePath 'Powershell.exe' -ArgumentList "-WindowStyle Hidden -File `"$launcher`""
+
+# 12) Start the simulator 
+Start-Process -FilePath 'Powershell.exe' -ArgumentList "-WindowStyle Hidden -File `"$simScript`"" 
 
 
 Write-Output "All tasks registered. App and simulator will run at system startup."
