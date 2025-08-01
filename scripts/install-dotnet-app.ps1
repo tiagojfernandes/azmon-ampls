@@ -55,7 +55,7 @@ $json | Set-Content appsettings.json
 $launcher = Join-Path $appDir "start-sample.ps1"
 @"
 Set-Location `"$samplePath`"
-& `"$dotnetExe`" run
+& `"$dotnetExe`" run --urls http://0.0.0.0:5000
 "@ | Set-Content $launcher
 
 # 9) Register the app startup task (SYSTEM, at boot)
@@ -75,8 +75,8 @@ if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) 
 # 10) Create a simulation script that loops good/bad requests every 30s
 $simScript = Join-Path $appDir "simulate-traffic.ps1"
 @'
-$goodUrl = 'https://localhost:5001'
-$badUrl  = 'https://localhost:5001/BankAccountNumber'
+$goodUrl = 'http://localhost:5000'
+$badUrl  = 'http://localhost:5000/BankAccountNumber'
 while ($true) {
     try {
         Invoke-WebRequest -Uri $goodUrl -UseBasicParsing -TimeoutSec 10 | Out-Null
@@ -100,14 +100,20 @@ if (-not (Get-ScheduledTask -TaskName $simTaskName -ErrorAction SilentlyContinue
     $actionSim  = New-ScheduledTaskAction    -Execute "Powershell.exe" `
                    -Argument "-WindowStyle Hidden -File `"$simScript`""
     
-    # Create a trigger that starts at boot and repeats every 30 seconds
-    $triggerSim = New-ScheduledTaskTrigger   -AtStartup
-    $triggerSim.Repetition.Interval = "PT30S"  # Every 30 seconds
-    $triggerSim.Repetition.Duration = "P1D"    # For 1 day (then repeats daily)
+    # Create a trigger that repeats every 30 seconds, starting 1 minute after boot
+    $startTime = (Get-Date).AddMinutes(1)
+    $triggerSim = New-ScheduledTaskTrigger -Once -At $startTime -RepetitionInterval (New-TimeSpan -Seconds 30) -RepetitionDuration ([TimeSpan]::MaxValue)
+    
+    # Create settings to ensure it runs indefinitely
+    $settings = New-ScheduledTaskSettingsSet
+    $settings.ExecutionTimeLimit = "PT0S"  # No time limit
+    $settings.RestartCount = 3
+    $settings.StartWhenAvailable = $true
     
     Register-ScheduledTask -TaskName     $simTaskName `
                            -Action       $actionSim `
                            -Trigger      $triggerSim `
+                           -Settings     $settings `
                            -Description  "Simulate good and bad requests every 30 seconds" `
                            -User         "NT AUTHORITY\SYSTEM" `
                            -RunLevel     Highest
