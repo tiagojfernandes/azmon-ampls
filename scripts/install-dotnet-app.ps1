@@ -1,9 +1,3 @@
-Start-Process -FilePath 'Powershell.exe' -ArgumentList "-WindowStyle Hidden -File `"$launcher`"" 
-
-Write-Output "Setup complete. App will run now and on each logon."
-
-
-
 param(
     [Parameter(Mandatory=$true)]
     [string] $ConnectionString
@@ -61,7 +55,7 @@ $json | Set-Content appsettings.json
 $launcher = Join-Path $appDir "start-sample.ps1"
 @"
 Set-Location `"$samplePath`"
-& `"$dotnetExe`" run --urls http://0.0.0.0:5000
+& `"$dotnetExe`" run
 "@ | Set-Content $launcher
 
 # 9) Register the app startup task (SYSTEM, at boot)
@@ -105,10 +99,12 @@ $simTaskName = "DotnetSampleSimulator"
 if (-not (Get-ScheduledTask -TaskName $simTaskName -ErrorAction SilentlyContinue)) {
     $actionSim  = New-ScheduledTaskAction    -Execute "Powershell.exe" `
                    -Argument "-WindowStyle Hidden -File `"$simScript`""
-    $triggerSim = New-ScheduledTaskTrigger   -Once `
-                   -AtStartup `
-                   -RepetitionInterval (New-TimeSpan -Seconds 30) `
-                   -RepetitionDuration (New-TimeSpan -Days 365)
+    
+    # Create a trigger that starts at boot and repeats every 30 seconds
+    $triggerSim = New-ScheduledTaskTrigger   -AtStartup
+    $triggerSim.Repetition.Interval = "PT30S"  # Every 30 seconds
+    $triggerSim.Repetition.Duration = "P1D"    # For 1 day (then repeats daily)
+    
     Register-ScheduledTask -TaskName     $simTaskName `
                            -Action       $actionSim `
                            -Trigger      $triggerSim `
