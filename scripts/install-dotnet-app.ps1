@@ -55,7 +55,7 @@ $json | Set-Content appsettings.json
 $launcher = Join-Path $appDir "start-sample.ps1"
 @"
 Set-Location `"$samplePath`"
-& `"$dotnetExe`" run --urls http://0.0.0.0:5000
+& `"$dotnetExe`" run
 "@ | Set-Content $launcher
 
 # 9) Register the app startup task (SYSTEM, at boot)
