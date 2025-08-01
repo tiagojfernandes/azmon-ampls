@@ -44,7 +44,27 @@ if (-not (Test-Path $dotnetExe)) {
 }
 
 # 6) Configure Application Insights
-$json = '{ "Logging": { "LogLevel": { "Default": "Information", "Microsoft.AspNetCore": "Warning" } }, "AllowedHosts": "*", "ApplicationInsights": { "ConnectionString": "' + $ConnectionString + '" } }'
+# Extract InstrumentationKey from ConnectionString
+$instrumentationKey = ""
+if ($ConnectionString -match "InstrumentationKey=([^;]+)") {
+    $instrumentationKey = $matches[1]
+}
+
+$appsettings = @{
+    "ApplicationInsights" = @{
+        "InstrumentationKey" = $instrumentationKey
+    }
+    "Logging" = @{
+        "LogLevel" = @{
+            "Default" = "Information"
+            "Microsoft" = "Warning"
+            "Microsoft.Hosting.Lifetime" = "Information"
+        }
+    }
+    "AllowedHosts" = "*"
+}
+
+$json = $appsettings | ConvertTo-Json -Depth 4
 $json | Set-Content appsettings.json
 
 # 7) Add AI package and build
@@ -55,7 +75,7 @@ $json | Set-Content appsettings.json
 $launcher = Join-Path $appDir "start-sample.ps1"
 @"
 Set-Location `"C:\apps\dotnet-sample\samples\azure\app-insights-aspnet-core-quickstart`"
-& `"$dotnetExe`" run
+& `"$dotnetExe`" run --urls http://0.0.0.0:5000
 "@ | Set-Content $launcher
 
 # 9) Register the app startup task (SYSTEM, at boot)
@@ -75,8 +95,8 @@ if (-not (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue)) 
 # 10) Create a simulation script that loops good/bad requests every 5s
 $simScript = Join-Path $appDir "simulate-traffic.ps1"
 @'
-$goodUrl = 'https://localhost:5001'
-$badUrl  = 'https://localhost:5001/BankAccountNumber'
+$goodUrl = 'http://localhost:5000'
+$badUrl  = 'http://localhost:5000/BankAccountNumber'
 while ($true) {
     try {
         Invoke-WebRequest -Uri $goodUrl -UseBasicParsing -TimeoutSec 10 | Out-Null
