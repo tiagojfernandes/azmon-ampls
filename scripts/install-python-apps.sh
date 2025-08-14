@@ -17,6 +17,9 @@ AI_CONN_STR="$1"
 # export for all sessions
 sudo tee -a /etc/environment <<EOF
 APPLICATIONINSIGHTS_CONNECTION_STRING=$AI_CONN_STR
+export OTEL_RESOURCE_ATTRIBUTES="service.instance.id=azmon-ubuntu-vm"
+export OTEL_SERVICE_NAME="flaskapp-rolldice"
+
 EOF
 
 BASE_DIR="/home/azureuser/flask-sample"
