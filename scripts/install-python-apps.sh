@@ -36,13 +36,14 @@ source "$BASE_DIR/.venv/bin/activate"
 pip install --upgrade pip
 
 pip install \
+  flask \
   azure-monitor-opentelemetry
 
 cat > "$BASE_DIR/flask_app.py" <<'EOF'
 from azure.monitor.opentelemetry import configure_azure_monitor
 
 from random import randint
-import logging
+import logging, os
 from opentelemetry import trace
 
 conn_str = os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
