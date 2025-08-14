@@ -7,9 +7,7 @@ export HOME=${HOME:-/home/azureuser}
 if [[ $# -lt 1 ]]; then
   cat <<EOF
 Usage: $0 <APPLICATION_INSIGHTS_CONNECTION_STRING>
-Deploys Flask app with CLI-based OpenTelemetry injection  
-
-Both will restart on reboot via cron.
+Deploys Flask Sample App with App Insights instrumentation for Python
 EOF
   exit 1
 fi
@@ -21,56 +19,72 @@ sudo tee -a /etc/environment <<EOF
 APPLICATIONINSIGHTS_CONNECTION_STRING=$AI_CONN_STR
 EOF
 
-
-BASE_DIR="/home/azureuser/otel-samples"
+BASE_DIR="/home/azureuser/flask-sample"
 echo "Creating base directory at $BASE_DIR"
 mkdir -p "$BASE_DIR"
 
-FLASKDIR="$BASE_DIR/flask-samples"
-mkdir -p "$FLASKDIR"
-
-MANUALDIR="$BASE_DIR/manual-samples"
-mkdir -p "$MANUALDIR"
-
-echo "→ Deploying Flask (CLI instrumentation) to $FLASKDIR"
+echo "→ Deploying Flask Sample App to $BASE_DIR"
 
 sudo apt-get update -y
 sudo apt-get install -y python3-venv python3-pip curl unzip
 
-python3 -m venv "$FLASKDIR/.venv"
-source "$FLASKDIR/.venv/bin/activate"
+python3 -m venv "$BASE_DIR/.venv"
+source "$BASE_DIR/.venv/bin/activate"
 pip install --upgrade pip
 
 pip install \
-  flask \
-  opentelemetry-api \
-  opentelemetry-sdk \
-  opentelemetry-instrumentation-flask \
-  opentelemetry-instrumentation-requests \
-  azure-monitor-opentelemetry-exporter
+  azure-monitor-opentelemetry
 
-cat > "$FLASKDIR/flask_app.py" <<'EOF'
-from flask import Flask
+cat > "$BASE_DIR/flask_app.py" <<'EOF'
+from azure.monitor.opentelemetry import configure_azure_monitor
+
+from random import randint
+import logging
+from opentelemetry import trace
+
+configure_azure_monitor(
+	connection_string="InstrumentationKey=6edc87cc-edee-4600-9cc8-a07c34df9018;IngestionEndpoint=https://northeurope-2.in.applicationinsights.azure.com/;LiveEndpoint=https://northeurope.livediagnostics.monitor.azure.com/;ApplicationId=ec37467d-2c86-4eb6-89dc-81a9a0849c67",
+)
+
+from flask import Flask, request
+
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-@app.route("/")
-def index():
-    return "Hello from CLI-instrumented Flask!"
-    
+
+# Endpoint to simulate a dice roll. Accepts an optional 'player' query parameter.
+# Logs the result of the dice roll, including the player's name if provided.
+# Returns the result of the dice roll as a string.
+@app.route("/rolldice")
+def roll_dice():
+    player = request.args.get('player', default = None, type = str)
+    result = str(roll())
+    if player:
+        logger.warning("%s is rolling the dice: %s", player, result)
+    else:
+        logger.warning("Anonymous player is rolling the dice: %s", result)
+    return result
+
+# Exceptions that are raised within the request are automatically captured
+@app.route("/exception")
+def exception():
+    raise Exception("Hit an exception")
+
+def roll():
+    return randint(1, 6)
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="localhost", port=5000)
+    roll_dice()
 EOF
 
-nohup opentelemetry-instrument \
-  --traces_exporter azure_monitor \
-  --service_name flask-cli-sample \
-  python "$FLASKDIR/flask_app.py" \
-  >"$FLASKDIR/nohup.out" 2>&1 &
+pyrhon3 "$BASE_DIR/python3" flask_app.py &
 
-echo "→ Flask (CLI) up on port 5000."
+echo "→ Flask Sample App up on port 5000."
 
 # creating the cron jobs
-echo "Creating jobs to call both apps every 15s."
+echo "Creating jobs to call app's endpoint every 15s."
 
 # ─── Add every‑15s cron jobs ────────────────────────────────────────────────
 CRON_TMP=$(mktemp)
