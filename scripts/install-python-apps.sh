@@ -7,7 +7,7 @@ export HOME=${HOME:-/home/azureuser}
 if [[ $# -lt 1 ]]; then
   cat <<EOF
 Usage: $0 <APPLICATION_INSIGHTS_CONNECTION_STRING>
-Deploys Flask Sample App with App Insights instrumentation for Python
+Deploys Flask Sample App with Azure Monitor OpenTelemetry Distro
 EOF
   exit 1
 fi
@@ -46,6 +46,7 @@ conn_str = os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
 
 configure_azure_monitor(
 	connection_string=conn_str,
+  enable_live_metrics=True
 )
 
 from flask import Flask, request
