@@ -42,8 +42,10 @@ from random import randint
 import logging
 from opentelemetry import trace
 
+conn_str = os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
+
 configure_azure_monitor(
-	connection_string="InstrumentationKey=6edc87cc-edee-4600-9cc8-a07c34df9018;IngestionEndpoint=https://northeurope-2.in.applicationinsights.azure.com/;LiveEndpoint=https://northeurope.livediagnostics.monitor.azure.com/;ApplicationId=ec37467d-2c86-4eb6-89dc-81a9a0849c67",
+	connection_string=conn_str,
 )
 
 from flask import Flask, request
