@@ -83,22 +83,31 @@ pyrhon3 "$BASE_DIR/python3" flask_app.py &
 
 echo "→ Flask Sample App up on port 5000."
 
-# creating the cron jobs
-echo "Creating jobs to call app's endpoint every 15s."
+
+# Creating the cron job
+echo "Creating jobs to call Flask app every 15s."
 
 # ─── Add every‑15s cron jobs ────────────────────────────────────────────────
 CRON_TMP=$(mktemp)
 crontab -l 2>/dev/null > "$CRON_TMP" || true
 
-# 1) Cron job for Flask (assuming port 5000)
+# 1) Cron job for Flask
 if ! grep -q "CALL_FLASK_APP_15S" "$CRON_TMP"; then
   cat >> "$CRON_TMP" <<'EOF'
-# CALL_FLASK_APP_15S: hit Flask endpoint 4/min (every 15s)
+# CALL_FLASK_APP_15S: hit Flask endpoints 4/min (every 15s)
 SHELL=/bin/bash
-* * * * * . /etc/environment && for i in {1..4}; do curl -s http://127.0.0.1:5000/ > /dev/null; sleep 15; done
+* * * * * . /etc/environment && for i in {1..4}; do \
+  curl -s "http://127.0.0.1:5000/rolldice?player=Player1" > /dev/null; \
+  curl -s "http://127.0.0.1:5000/exception" > /dev/null; \
+  sleep 15; \
+done
 EOF
+  crontab "$CRON_TMP"
+  echo "Cron job added successfully."
+else
+  echo "Cron job already exists."
 fi
 
-crontab "$CRON_TMP"
 rm "$CRON_TMP"
-echo "Cron jobs updated to call both apps every 15s."
+
+echo "Cron jobs updated to call Flask app every 15s."
