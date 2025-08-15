@@ -112,7 +112,7 @@ resource "azurerm_private_endpoint" "ampls" {
       azurerm_private_dns_zone.oms.id,
       azurerm_private_dns_zone.ods.id,
       azurerm_private_dns_zone.agentsvc.id,
-      azurerm_private_dns_zone.applicationinsights.id
+      azurerm_private_dns_zone.blob.id
     ]
   }
 
@@ -121,7 +121,7 @@ resource "azurerm_private_endpoint" "ampls" {
     azurerm_private_dns_zone.oms,
     azurerm_private_dns_zone.ods,
     azurerm_private_dns_zone.agentsvc,
-    azurerm_private_dns_zone.applicationinsights,
+    azurerm_private_dns_zone.blob,
     azurerm_monitor_private_link_scope.main,
     azurerm_private_dns_zone_virtual_network_link.monitor_hub,
     azurerm_private_dns_zone_virtual_network_link.monitor_windows_spoke,
@@ -135,9 +135,9 @@ resource "azurerm_private_endpoint" "ampls" {
     azurerm_private_dns_zone_virtual_network_link.agentsvc_hub,
     azurerm_private_dns_zone_virtual_network_link.agentsvc_windows_spoke,
     azurerm_private_dns_zone_virtual_network_link.agentsvc_ubuntu_spoke,
-    azurerm_private_dns_zone_virtual_network_link.applicationinsights_hub,
-    azurerm_private_dns_zone_virtual_network_link.applicationinsights_windows_spoke,
-    azurerm_private_dns_zone_virtual_network_link.applicationinsights_ubuntu_spoke
+    azurerm_private_dns_zone_virtual_network_link.blob_hub,
+    azurerm_private_dns_zone_virtual_network_link.blob_windows_spoke,
+    azurerm_private_dns_zone_virtual_network_link.blob_ubuntu_spoke
   ]
 
   tags = var.tags
@@ -209,14 +209,14 @@ resource "azurerm_private_dns_zone_virtual_network_link" "blob_hub" {
   tags = var.tags
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "applicationinsights_hub" {
+resource "azurerm_private_dns_zone_virtual_network_link" "blob_hub" {
   name                  = "hub-link"
   resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.applicationinsights.name
+  private_dns_zone_name = azurerm_private_dns_zone.blob.name
   virtual_network_id    = var.hub_vnet_id
   
   depends_on = [
-    azurerm_private_dns_zone.applicationinsights
+    azurerm_private_dns_zone.blob
   ]
   
   tags = var.tags
@@ -291,11 +291,11 @@ resource "azurerm_private_dns_zone_virtual_network_link" "blob_windows_spoke" {
 resource "azurerm_private_dns_zone_virtual_network_link" "applicationinsights_windows_spoke" {
   name                  = "windows-spoke-link"
   resource_group_name   = var.resource_group_name  
-  private_dns_zone_name = azurerm_private_dns_zone.applicationinsights.name
+  private_dns_zone_name = azurerm_private_dns_zone.blob.name
   virtual_network_id    = var.windows_spoke_vnet_id
   
   depends_on = [
-    azurerm_private_dns_zone.applicationinsights
+    azurerm_private_dns_zone.blob
   ]
   
   tags = var.tags
@@ -365,14 +365,14 @@ resource "azurerm_private_dns_zone_virtual_network_link" "blob_ubuntu_spoke" {
   tags = var.tags
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "applicationinsights_ubuntu_spoke" {
+resource "azurerm_private_dns_zone_virtual_network_link" "blob_ubuntu_spoke" {
   name                  = "ubuntu-spoke-link"
   resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.applicationinsights.name
+  private_dns_zone_name = azurerm_private_dns_zone.blob.name
   virtual_network_id    = var.ubuntu_spoke_vnet_id
   
   depends_on = [
-    azurerm_private_dns_zone.applicationinsights
+    azurerm_private_dns_zone.blob
   ]
   
   tags = var.tags
