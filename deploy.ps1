@@ -15,7 +15,7 @@ function Write-ColorText {
 # Clone the repo (skip if already cloned)
 if (-not (Test-Path "azmon-ampls")) {
     Write-ColorText "Cloning azmon-ampls repository..." -Color Cyan
-    git clone https://github.com/tiagojfernandes/azmon-ampls.git
+    git clone https://github.com/damanue/azmon-ampls.git
 }
 
 # Navigate to the project directory

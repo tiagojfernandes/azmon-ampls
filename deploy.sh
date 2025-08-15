@@ -14,7 +14,7 @@ NC='\033[0m' # No Color
 # Clone the repo (skip if already cloned)
 if [ ! -d "azmon-ampls" ]; then
   echo -e "${CYAN}Cloning azmon-ampls repository...${NC}"
-  git clone https://github.com/tiagojfernandes/azmon-ampls.git
+  git clone https://github.com/damanue/azmon-ampls.git
 fi
 
 # Navigate to the project directory
