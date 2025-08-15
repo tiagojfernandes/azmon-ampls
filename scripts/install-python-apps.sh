@@ -98,23 +98,24 @@ echo "Creating jobs to call Flask app every 15s."
 CRON_TMP=$(mktemp)
 crontab -l 2>/dev/null > "$CRON_TMP" || true
 
-# 1) Cron job for Flask
-if ! grep -q "CALL_FLASK_APP_15S" "$CRON_TMP"; then
-  cat >> "$CRON_TMP" <<'EOF'
-# CALL_FLASK_APP_15S: hit Flask endpoints 4/min (every 15s)
+# Ensure cron is present and running
+sudo apt-get update -y
+sudo apt-get install -y cron
+sudo systemctl enable --now cron
+
+echo "Creating jobs to call Flask app every 15s via /etc/cron.d."
+
+# Create a system cron file (must include the 'user' field after the schedule)
+sudo tee /etc/cron.d/call_flask_app >/dev/null <<'EOF'
 SHELL=/bin/bash
-* * * * * . /etc/environment && for i in {1..4}; do \
-  curl -s "http://127.0.0.1:5000/rolldice?player=Player1" > /dev/null; \
-  curl -s "http://127.0.0.1:5000/exception" > /dev/null; \
-  sleep 15; \
-done
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# CALL_FLASK_APP_15S: hit Flask endpoints 4/min (every 15s)
+* * * * * root . /etc/environment; for i in {1..4}; do curl -s "http://127.0.0.1:5000/rolldice?player=Player1" >/dev/null; curl -s "http://127.0.0.1:5000/exception" >/dev/null; sleep 15; done
 EOF
-  crontab "$CRON_TMP"
-  echo "Cron job added successfully."
-else
-  echo "Cron job already exists."
-fi
 
-rm "$CRON_TMP"
+sudo chmod 644 /etc/cron.d/call_flask_app
+sudo systemctl reload cron || true
 
-echo "Cron jobs updated to call Flask app every 15s."
+echo "Cron job installed at /etc/cron.d/call_flask_app"
+
