@@ -8,7 +8,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   sku                        = var.log_analytics_sku
   retention_in_days          = var.log_analytics_retention_days
   internet_ingestion_enabled = false  # This enforces private link only
-  internet_query_enabled     = false  # This enforces private link only
+  internet_query_enabled     = true
 
   tags = var.tags
 }
