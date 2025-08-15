@@ -31,13 +31,9 @@ echo "→ Deploying Flask Sample App to $BASE_DIR"
 sudo apt-get update -y
 sudo apt-get install -y python3-venv python3-pip curl unzip
 
-python3 -m venv "$BASE_DIR/.venv"
-source "$BASE_DIR/.venv/bin/activate"
-pip install --upgrade pip
+sudo pip3 install --upgrade pip
 
-pip install \
-  flask \
-  azure-monitor-opentelemetry
+sudo pip3 install flask azure-monitor-opentelemetry
 
 cat > "$BASE_DIR/flask_app.py" <<'EOF'
 from azure.monitor.opentelemetry import configure_azure_monitor
@@ -86,10 +82,9 @@ if __name__ == "__main__":
     roll_dice()
 EOF
 
-pyrhon3 "$BASE_DIR/python3" flask_app.py &
+python3 "$BASE_DIR/flask_app.py" &
 
 echo "→ Flask Sample App up on port 5000."
-
 
 # Creating the cron job
 echo "Creating jobs to call Flask app every 15s."
