@@ -74,6 +74,7 @@ resource "azurerm_linux_web_app" "java" {
     "XDT_MicrosoftApplicationInsights_Mode" = "Recommended"
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "XDT_MicrosoftApplicationInsights_PreemptSdk" = "disabled"
+    "SERVER_PORT" = "$PORT"
   }
 
   https_only = true

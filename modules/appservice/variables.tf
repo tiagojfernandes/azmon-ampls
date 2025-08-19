@@ -65,7 +65,7 @@ variable "java_server_version" {
 
 variable "java_app_command_line" {
   type        = string
-  default     = "java -javaagent:/home/site/wwwroot/agent/applicationinsights-agent.jar -jar /home/site/wwwroot/app.jar --server.port=$PORT"
+  default     = "java -javaagent:/home/site/wwwroot/agent/applicationinsights-agent.jar -jar /home/site/wwwroot/app.jar"
   description = "Custom startup command for the Java Web App"
 }
 

@@ -134,3 +134,24 @@ output "ubuntu_vm_autoshutdown_schedule_id" {
   description = "ID of the Ubuntu VM auto-shutdown schedule"
   value       = module.compute.ubuntu_vm_autoshutdown_schedule_id
 }
+
+# App Service outputs
+output "java_webapp_name" {
+  description = "Name of the Java web app"
+  value       = module.appservice.java_webapp_name
+}
+
+output "dotnet_webapp_name" {
+  description = "Name of the .NET web app"
+  value       = module.appservice.dotnet_webapp_name
+}
+
+output "java_webapp_id" {
+  description = "ID of the Java web app"
+  value       = module.appservice.java_webapp_id
+}
+
+output "dotnet_webapp_id" {
+  description = "ID of the .NET web app"
+  value       = module.appservice.dotnet_webapp_id
+}
