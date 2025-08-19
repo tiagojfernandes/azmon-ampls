@@ -42,6 +42,8 @@ module "network" {
   windows_spoke_vm_subnet_address_prefixes = var.windows_spoke_vm_subnet_address_prefixes
   ubuntu_spoke_vm_subnet_address_prefixes  = var.ubuntu_spoke_vm_subnet_address_prefixes
 
+  hub_appsvc_integration_subnet_prefixes = ["10.0.20.0/26"] # pick an unused range in hub
+
   tags = var.tags
 }
 
@@ -104,3 +106,21 @@ module "compute" {
 
   tags = var.tags
 }
+
+#App Service Module
+module "appservice" {
+ source = "../../modules/appservice"
+
+  prefix              = var.prefix
+  location            = var.location
+  resource_group_name = azurerm_resource_group.main.name
+
+  plan_sku            = "S1"  # B1+ required; S1 is a good default
+  integration_subnet_id = module.network.appservice_integration_subnet_id
+
+  log_analytics_workspace_id    = module.monitor.log_analytics_workspace_id
+  appinsights_connection_string = module.monitor.connection_string
+
+  tags = var.tags
+}
+

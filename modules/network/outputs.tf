@@ -47,3 +47,7 @@ output "vm_nsg_id" {
   description = "ID of the VM network security group"
   value       = azurerm_network_security_group.vm_nsg.id
 }
+
+output "appservice_integration_subnet_id" {
+  value = azurerm_subnet.hub_appsvc_integration.id
+}

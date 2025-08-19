@@ -196,3 +196,21 @@ resource "azurerm_subnet_network_security_group_association" "ubuntu_vm_subnet_n
     azurerm_network_security_group.vm_nsg
   ]
 }
+
+# App Service VNet Integration subnet (Hub)
+resource "azurerm_subnet" "hub_appsvc_integration" {
+  name                 = "snet-appsvc-int"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.hub.name
+  address_prefixes     = var.hub_appsvc_integration_subnet_prefixes
+
+  # Must be delegated for integration
+  delegation {
+    name = "appservice-delegation"
+    service_delegation {
+      name = "Microsoft.Web/serverFarms"
+    }
+  }
+}
+
+

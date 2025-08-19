@@ -54,3 +54,8 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "hub_appsvc_integration_subnet_prefixes" {
+  type = list(string)
+  # e.g. ["10.0.20.0/26"]
+}
