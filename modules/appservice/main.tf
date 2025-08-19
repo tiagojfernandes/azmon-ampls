@@ -61,17 +61,19 @@ resource "azurerm_linux_web_app" "java" {
     always_on            = true
     ftps_state           = "Disabled"
     minimum_tls_version  = "1.2"
-
+    vnet_route_all_enabled = true
    
     app_command_line     = var.java_app_command_line
-
-    virtual_network_subnet_id = var.integration_subnet_id
   }
 
+  virtual_network_subnet_id = var.integration_subnet_id
+
   app_settings = {
-    "WEBSITE_VNET_ROUTE_ALL"             = "1"
     "WEBSITE_DNS_SERVER"                 = "168.63.129.16"
     "APPLICATIONINSIGHTS_CONNECTION_STRING" = coalesce(var.appinsights_connection_string, "")
+    "XDT_MicrosoftApplicationInsights_Mode" = "Recommended"
+    "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
+    "XDT_MicrosoftApplicationInsights_PreemptSdk" = "disabled"
   }
 
   https_only = true
