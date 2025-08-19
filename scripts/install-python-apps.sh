@@ -7,159 +7,142 @@ export HOME=${HOME:-/home/azureuser}
 if [[ $# -lt 1 ]]; then
   cat <<EOF
 Usage: $0 <APPLICATION_INSIGHTS_CONNECTION_STRING>
-Deploys two samples:
-  1) Flask app with CLI-based OpenTelemetry injection  
-  2) Manual Python “workload” with hand-wired traces/metrics/logs
-
-Both will restart on reboot via cron.
+Deploys Flask Sample App with Azure Monitor OpenTelemetry Distro
 EOF
   exit 1
 fi
 
 AI_CONN_STR="$1"
 
-# export for all sessions
-sudo tee -a /etc/environment <<EOF
-APPLICATIONINSIGHTS_CONNECTION_STRING=$AI_CONN_STR
-EOF
-
-
-BASE_DIR="/home/azureuser/otel-samples"
+BASE_DIR="/home/azureuser/flask-sample"
 echo "Creating base directory at $BASE_DIR"
 mkdir -p "$BASE_DIR"
 
-FLASKDIR="$BASE_DIR/flask-samples"
-mkdir -p "$FLASKDIR"
+echo "→ Deploying Flask Sample App to $BASE_DIR"
 
-MANUALDIR="$BASE_DIR/manual-samples"
-mkdir -p "$MANUALDIR"
-
-echo "→ Deploying Flask (CLI instrumentation) to $FLASKDIR"
-
+# Base deps
 sudo apt-get update -y
-sudo apt-get install -y python3-venv python3-pip curl unzip
+sudo apt-get install -y python3-venv python3-pip curl unzip cron
+sudo systemctl enable --now cron
 
-python3 -m venv "$FLASKDIR/.venv"
-source "$FLASKDIR/.venv/bin/activate"
+# Python venv + libs
+python3 -m venv "$BASE_DIR/.venv"
+source "$BASE_DIR/.venv/bin/activate"
 pip install --upgrade pip
-
 pip install \
   flask \
-  opentelemetry-api \
-  opentelemetry-sdk \
-  opentelemetry-instrumentation-flask \
-  opentelemetry-instrumentation-requests \
-  azure-monitor-opentelemetry-exporter
+  azure-monitor-opentelemetry
 
-cat > "$FLASKDIR/flask_app.py" <<'EOF'
-from flask import Flask
-app = Flask(__name__)
+# Flask app
+cat > "$BASE_DIR/flask_app.py" <<'EOF'
+from azure.monitor.opentelemetry import configure_azure_monitor
 
-@app.route("/")
-def index():
-    return "Hello from CLI-instrumented Flask!"
-    
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
-EOF
+from random import randint
+import logging, os
+from opentelemetry import trace
 
-nohup opentelemetry-instrument \
-  --traces_exporter azure_monitor \
-  --service_name flask-cli-sample \
-  python "$FLASKDIR/flask_app.py" \
-  >"$FLASKDIR/nohup.out" 2>&1 &
+conn_str = os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
 
-echo "→ Flask (CLI) up on port 5000."
-
-
-###### Manual Sample #########
-
-python3 -m venv "$MANUALDIR/.venv"
-source "$MANUALDIR/.venv/bin/activate"
-
-pip install --upgrade pip
-pip install \
-  opentelemetry-api \
-  opentelemetry-sdk \
-  azure-monitor-opentelemetry-exporter
-
-cat > "$MANUALDIR/app.py" <<'EOF'
-import os, time, logging
-from random import random
-from opentelemetry import trace, metrics
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
-from azure.monitor.opentelemetry.exporter import (
-    AzureMonitorTraceExporter,
-    AzureMonitorMetricExporter
+configure_azure_monitor(
+    connection_string=conn_str,
+    enable_live_metrics=True
 )
 
-# setup
-conn_str = os.environ["APPLICATIONINSIGHTS_CONNECTION_STRING"]
-resource = Resource.create({"service.name": "manual-sample"})
+from flask import Flask, request
 
-# tracing
-tp = TracerProvider(resource=resource)
-tp.add_span_processor(BatchSpanProcessor(AzureMonitorTraceExporter(connection_string=conn_str)))
-trace.set_tracer_provider(tp)
-tracer = trace.get_tracer(__name__)
-
-# metrics
-mr = PeriodicExportingMetricReader(
-       exporter=AzureMonitorMetricExporter(connection_string=conn_str),
-       export_interval_millis=10000)
-mp = MeterProvider(resource=resource, metric_readers=[mr])
-metrics.set_meter_provider(mp)
-meter = metrics.get_meter(__name__)
-counter = meter.create_counter("work.iterations")
-
-# logging
+app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("manual")
+logger = logging.getLogger(__name__)
 
-def work(i):
-    with tracer.start_as_current_span("iter-span"):
-        counter.add(1, {"iteration": i})
-        logger.info(f"Iteration {i} done")
-        time.sleep(1)
+@app.route("/rolldice")
+def roll_dice():
+    player = request.args.get('player', default=None, type=str)
+    result = str(roll())
+    if player:
+        logger.warning("%s is rolling the dice: %s", player, result)
+    else:
+        logger.warning("Anonymous player is rolling the dice: %s", result)
+    return result
+
+@app.route("/exception")
+def exception():
+    raise Exception("Hit an exception")
+
+def roll():
+    return randint(1, 6)
 
 if __name__ == "__main__":
-    for i in range(4):
-        work(i)
+    # Bind explicitly to loopback (your cron calls 127.0.0.1)
+    app.run(host="127.0.0.1", port=5000)
 EOF
 
-nohup "$MANUALDIR/.venv/bin/python" "$MANUALDIR/app.py" > "$MANUALDIR/app.log" 2>&1 &
+# Put env vars in a systemd-friendly place (/etc/environment reads KEY=VALUE)
+# Quote the connection string to be safe with special chars/spaces.
+AI_ESC="${AI_CONN_STR//\"/\\\"}"  # escape any double-quotes just in case
+sudo sed -i '/^APPLICATIONINSIGHTS_CONNECTION_STRING/d' /etc/environment
+sudo sed -i '/^OTEL_RESOURCE_ATTRIBUTES/d' /etc/environment
+sudo sed -i '/^OTEL_SERVICE_NAME/d' /etc/environment
+sudo tee -a /etc/environment >/dev/null <<EOF
+APPLICATIONINSIGHTS_CONNECTION_STRING="$AI_ESC"
+OTEL_RESOURCE_ATTRIBUTES=service.instance.id=azmon-ubuntu-vm
+OTEL_SERVICE_NAME=flaskapp-rolldice
+EOF
 
-echo "→ Manual app running; check app.log for output."
+# Ensure the files are owned by the runtime user
+sudo chown -R azureuser:azureuser "$BASE_DIR"
 
-# creating the cron jobs
-echo "Creating jobs to call both apps every 15s."
+# systemd unit
+sudo tee /etc/systemd/system/flaskapp.service >/dev/null <<'EOF'
+[Unit]
+Description=Flask Sample App (flaskapp-rolldice)
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=simple
+User=azureuser
+Group=azureuser
+WorkingDirectory=/home/azureuser/flask-sample
+EnvironmentFile=/etc/environment
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/azureuser/flask-sample/.venv/bin/python /home/azureuser/flask-sample/flask_app.py
+Restart=on-failure
+RestartSec=5
 
-# ─── Add every‑15s cron jobs ────────────────────────────────────────────────
-CRON_TMP=$(mktemp)
-crontab -l 2>/dev/null > "$CRON_TMP" || true
+[Install]
+WantedBy=multi-user.target
+EOF
 
-# 1) Cron job for Flask (assuming port 5000)
-if ! grep -q "CALL_FLASK_APP_15S" "$CRON_TMP"; then
-  cat >> "$CRON_TMP" <<'EOF'
-# CALL_FLASK_APP_15S: hit Flask endpoint 4/min (every 15s)
+# Start now and on every boot
+sudo systemctl daemon-reload
+sudo systemctl enable --now flaskapp.service
+
+# Show brief status
+systemctl status flaskapp --no-pager || true
+
+echo "→ Waiting for Flask app to become ready on 127.0.0.1:5000 …"
+for i in {1..30}; do
+  if curl -fsS "http://127.0.0.1:5000/rolldice" >/dev/null; then
+    echo "Flask app is responding."
+    break
+  fi
+  sleep 1
+  if (( i == 30 )); then
+    echo "WARNING: Flask app didn't respond within 30s. Check logs: sudo journalctl -u flaskapp -n 200 --no-pager" >&2
+  fi
+done
+# ─── Traffic generator via /etc/cron.d ──────────────────────────────────────
+echo "Creating jobs to call Flask app every 15s via /etc/cron.d."
+
+sudo tee /etc/cron.d/call_flask_app >/dev/null <<'EOF'
 SHELL=/bin/bash
-* * * * * . /etc/environment && for i in {1..4}; do curl -s http://127.0.0.1:5000/ > /dev/null; sleep 15; done
-EOF
-fi
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-# 2) Cron job for manual sample (using the venv Python)
-if ! grep -q "CALL_MANUAL_APP_15S" "$CRON_TMP"; then
-cat >> "$CRON_TMP" <<'EOF'
-# CALL_MANUAL_APP_15S: run manual sample 4/min (every 15s)
-SHELL=/bin/bash
-* * * * * . /etc/environment && for i in {1..4}; do /home/azureuser/otel-samples/manual-samples/.venv/bin/python /home/azureuser/otel-samples/manual-samples/app.py >> /home/azureuser/otel-samples/manual-samples/app.log 2>&1; sleep 15; done
+# CALL_FLASK_APP_15S: hit Flask endpoints 4/min (every 15s)
+* * * * * root . /etc/environment; for i in {1..4}; do curl -s "http://127.0.0.1:5000/rolldice?player=Player1" >/dev/null; curl -s "http://127.0.0.1:5000/exception" >/dev/null; sleep 15; done
 EOF
-fi
 
-crontab "$CRON_TMP"
-rm "$CRON_TMP"
-echo "Cron jobs updated to call both apps every 15s."
+sudo chmod 644 /etc/cron.d/call_flask_app
+sudo systemctl reload cron || true
+
+echo "Cron job installed at /etc/cron.d/call_flask_app"
+echo "→ Flask Sample App should be up on port 5000."

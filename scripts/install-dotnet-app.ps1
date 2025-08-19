@@ -44,15 +44,9 @@ if (-not (Test-Path $dotnetExe)) {
 }
 
 # 6) Configure Application Insights
-# Extract InstrumentationKey from ConnectionString
-$instrumentationKey = ""
-if ($ConnectionString -match "InstrumentationKey=([^;]+)") {
-    $instrumentationKey = $matches[1]
-}
-
 $appsettings = @{
     "ApplicationInsights" = @{
-        "InstrumentationKey" = $instrumentationKey
+        "ConnectionString" = $ConnectionString
     }
     "Logging" = @{
         "LogLevel" = @{
