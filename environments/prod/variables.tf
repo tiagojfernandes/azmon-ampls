@@ -1,5 +1,11 @@
 variable "prefix" {
-  description = "Prefix for all resource names"
+  description = "Prefix for infrastructure resource names"
+  type        = string
+  default     = "azmon"
+}
+
+variable "app_service_prefix" {
+  description = "Prefix for App Service names (to avoid conflicts)"
   type        = string
   default     = "azmon"
 }

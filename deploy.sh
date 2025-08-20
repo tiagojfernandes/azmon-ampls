@@ -32,10 +32,10 @@ echo -e "${CYAN}Initializing Terraform...${NC}"
 terraform init
 
 echo -e "${CYAN}Planning Terraform deployment...${NC}"
-terraform plan -var="prefix=${CUSTOM_PREFIX}"
+terraform plan -var="app_service_prefix=${CUSTOM_PREFIX}"
 
 echo -e "${CYAN}Applying Terraform configuration...${NC}"
-terraform apply -auto-approve -var="prefix=${CUSTOM_PREFIX}"
+terraform apply -auto-approve -var="app_service_prefix=${CUSTOM_PREFIX}"
 
 echo -e "${GREEN}Terraform deployment completed successfully!${NC}"
 

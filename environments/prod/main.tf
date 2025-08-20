@@ -31,7 +31,7 @@ resource "azurerm_resource_group" "main" {
 module "network" {
   source = "../../modules/network"
 
-  prefix              = var.prefix
+  prefix              = "azmon"  # Fixed prefix for infrastructure
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
@@ -51,7 +51,7 @@ module "network" {
 module "monitor" {
   source = "../../modules/monitor"
 
-  prefix              = var.prefix
+  prefix              = "azmon"  # Fixed prefix for infrastructure
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
@@ -75,7 +75,7 @@ module "monitor" {
 module "compute" {
   source = "../../modules/compute"
 
-  prefix              = var.prefix
+  prefix              = "azmon"  # Fixed prefix for infrastructure
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
@@ -111,7 +111,7 @@ module "compute" {
 module "appservice" {
  source = "../../modules/appservice"
 
-  prefix              = var.prefix
+  prefix              = var.app_service_prefix  # Custom prefix for App Services only
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
