@@ -1,6 +1,9 @@
 #!/bin/bash
 
 # Azure Monitor AMPLS Lab Deployment Script
+# Usage: ./deploy.sh [custom-prefix]
+# Example: ./deploy.sh "mylab" (creates app-mylab-java, app-mylab-dotnet)
+# If no prefix provided, uses azmon-MMDD-HHMM to avoid conflicts
 
 set -e
 
@@ -20,14 +23,19 @@ fi
 # Navigate to the project directory
 cd azmon-ampls/environments/prod
 
+# Allow user to specify a custom prefix to avoid naming conflicts
+TIMESTAMP=$(date +%m%d-%H%M)
+CUSTOM_PREFIX=${1:-"azmon-${TIMESTAMP}"}
+echo -e "${CYAN}Using prefix: ${CUSTOM_PREFIX}${NC}"
+
 echo -e "${CYAN}Initializing Terraform...${NC}"
 terraform init
 
 echo -e "${CYAN}Planning Terraform deployment...${NC}"
-terraform plan
+terraform plan -var="prefix=${CUSTOM_PREFIX}"
 
 echo -e "${CYAN}Applying Terraform configuration...${NC}"
-terraform apply -auto-approve
+terraform apply -auto-approve -var="prefix=${CUSTOM_PREFIX}"
 
 echo -e "${GREEN}Terraform deployment completed successfully!${NC}"
 
