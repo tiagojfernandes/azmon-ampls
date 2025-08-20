@@ -39,6 +39,21 @@ DOTNET_WEBAPP_NAME=$(terraform output -raw dotnet_webapp_name)
 # Confirm values
 echo "RG=$RESOURCE_GROUP, Java=$JAVA_WEBAPP_NAME, Dotnet=$DOTNET_WEBAPP_NAME"
 
+# Wait for App Service to be fully ready for deployments
+echo -e "${YELLOW}Waiting for App Services to be fully initialized...${NC}"
+sleep 60
+
+# Optionally, verify App Service is responding (wait up to 3 minutes)
+echo -e "${CYAN}Checking if Java App Service is responding...${NC}"
+for i in {1..18}; do
+    if curl -s -o /dev/null -w "%{http_code}" "https://${JAVA_WEBAPP_NAME}.azurewebsites.net" | grep -q "200\|503\|404"; then
+        echo -e "${GREEN}Java App Service is responding!${NC}"
+        break
+    fi
+    echo "Attempt $i/18: App Service not ready yet, waiting 10 more seconds..."
+    sleep 10
+done
+
 # Navigate back to the project root for the Java sample deployment
 cd ../../
 
