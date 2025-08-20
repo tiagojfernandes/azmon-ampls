@@ -26,6 +26,11 @@ variable "java_app_name" {
   default = null
 }
 
+variable "node_app_name" {
+  type    = string
+  default = null
+}
+
 # Observability
 variable "log_analytics_workspace_id" {
   type    = string
@@ -67,6 +72,18 @@ variable "java_app_command_line" {
   type        = string
   default     = "java -javaagent:/home/site/wwwroot/agent/applicationinsights-agent.jar -jar /home/site/wwwroot/app.jar"
   description = "Custom startup command for the Java Web App"
+}
+
+# Node.js configuration
+variable "node_version" {
+  type    = string
+  default = "18-lts"
+}
+
+variable "node_app_command_line" {
+  type        = string
+  default     = "npm start"
+  description = "Custom startup command for the Node.js Web App"
 }
 
 

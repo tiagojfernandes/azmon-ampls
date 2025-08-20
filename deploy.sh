@@ -43,9 +43,10 @@ echo -e "${GREEN}Terraform deployment completed successfully!${NC}"
 RESOURCE_GROUP=$(terraform output -raw resource_group_name)
 JAVA_WEBAPP_NAME=$(terraform output -raw java_webapp_name)
 DOTNET_WEBAPP_NAME=$(terraform output -raw dotnet_webapp_name)
+NODE_WEBAPP_NAME=$(terraform output -raw node_webapp_name)
 
 # Confirm values
-echo "RG=$RESOURCE_GROUP, Java=$JAVA_WEBAPP_NAME, Dotnet=$DOTNET_WEBAPP_NAME"
+echo "RG=$RESOURCE_GROUP, Java=$JAVA_WEBAPP_NAME, Dotnet=$DOTNET_WEBAPP_NAME, Node=$NODE_WEBAPP_NAME"
 
 # Wait for App Service to be fully ready for deployments
 echo -e "${YELLOW}Waiting for App Services to be fully initialized...${NC}"
@@ -65,7 +66,7 @@ done
 # Navigate back to the project root for the Java sample deployment
 cd ../../
 
-
+# Deploy Java Application
 git clone https://github.com/Azure-Samples/ApplicationInsights-Java-Samples.git
 cd ApplicationInsights-Java-Samples
 
@@ -142,4 +143,34 @@ echo -e "${CYAN}Resources deployed:${NC}"
 echo -e "  Resource Group: $RESOURCE_GROUP"
 echo -e "  Java Web App: $JAVA_WEBAPP_NAME (https://$JAVA_WEBAPP_NAME.azurewebsites.net)"
 echo -e "  .NET Web App: $DOTNET_WEBAPP_NAME (https://$DOTNET_WEBAPP_NAME.azurewebsites.net)"
-echo -e "${CYAN}Note: Application Insights is configured for both web apps with private connectivity through AMPLS.${NC}"
+echo -e "  Node.js Web App: $NODE_WEBAPP_NAME (https://$NODE_WEBAPP_NAME.azurewebsites.net)"
+echo -e "${CYAN}Note: Application Insights is configured for all web apps with private connectivity through AMPLS.${NC}"
+
+# Deploy Node.js Application
+cd ../
+echo -e "${CYAN}Deploying Node.js sample application...${NC}"
+
+# Check if the repository already exists
+if [ ! -d "node-ai-demo" ]; then
+    git clone https://github.com/tiagojfernandes/node-ai-demo.git
+fi
+
+cd node-ai-demo
+
+# Create deployment package
+echo -e "${CYAN}Preparing Node.js deployment...${NC}"
+zip -r ../node-app.zip . -x ".git/*" "*.md" ".gitignore"
+
+# Deploy Node.js application
+az webapp deploy \
+  --resource-group $RESOURCE_GROUP \
+  --name $NODE_WEBAPP_NAME \
+  --src-path ../node-app.zip \
+  --type zip
+
+echo -e "${GREEN}Node.js application deployed to $NODE_WEBAPP_NAME${NC}"
+
+# Cleanup
+rm -f ../node-app.zip
+
+echo -e "${GREEN}All deployments completed successfully!${NC}"

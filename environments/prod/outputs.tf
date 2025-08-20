@@ -146,6 +146,11 @@ output "dotnet_webapp_name" {
   value       = module.appservice.dotnet_webapp_name
 }
 
+output "node_webapp_name" {
+  description = "Name of the Node.js web app"
+  value       = module.appservice.node_webapp_name
+}
+
 output "java_webapp_id" {
   description = "ID of the Java web app"
   value       = module.appservice.java_webapp_id
@@ -154,4 +159,9 @@ output "java_webapp_id" {
 output "dotnet_webapp_id" {
   description = "ID of the .NET web app"
   value       = module.appservice.dotnet_webapp_id
+}
+
+output "node_webapp_id" {
+  description = "ID of the Node.js web app"
+  value       = module.appservice.node_webapp_id
 }
