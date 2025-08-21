@@ -157,18 +157,37 @@ fi
 
 cd node-ai-demo
 
-# Create deployment package
+# Create deployment package (exclude dev files and include all necessary files)
 echo -e "${CYAN}Preparing Node.js deployment...${NC}"
-zip -r ../node-app.zip . -x ".git/*" "*.md" ".gitignore"
+zip -r ../node-app.zip . -x ".git/*" "*.md" ".gitignore" "node_modules/*"
 
-# Deploy Node.js application
+# Deploy Node.js application with proper settings
+echo -e "${CYAN}Deploying Node.js application to Azure App Service...${NC}"
 az webapp deploy \
   --resource-group $RESOURCE_GROUP \
   --name $NODE_WEBAPP_NAME \
   --src-path ../node-app.zip \
   --type zip
 
+# Wait a moment for deployment to process
+echo -e "${YELLOW}Waiting for Node.js deployment to complete...${NC}"
+sleep 30
+
+# Verify the deployment worked
+echo -e "${CYAN}Checking Node.js app deployment status...${NC}"
+for i in {1..12}; do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "https://${NODE_WEBAPP_NAME}.azurewebsites.net/healthz" || echo "000")
+    if [ "$HTTP_CODE" == "200" ]; then
+        echo -e "${GREEN}Node.js app is responding successfully!${NC}"
+        break
+    fi
+    echo "Attempt $i/12: Node.js app not ready yet (HTTP $HTTP_CODE), waiting 10 more seconds..."
+    sleep 10
+done
+
 echo -e "${GREEN}Node.js application deployed to $NODE_WEBAPP_NAME${NC}"
+echo -e "${CYAN}Node.js app URL: https://$NODE_WEBAPP_NAME.azurewebsites.net${NC}"
+echo -e "${CYAN}Health check: https://$NODE_WEBAPP_NAME.azurewebsites.net/healthz${NC}"
 
 # Cleanup
 rm -f ../node-app.zip
