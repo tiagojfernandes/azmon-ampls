@@ -41,12 +41,13 @@ echo -e "${GREEN}Terraform deployment completed successfully!${NC}"
 
 # Capture outputs into variables (while still in the terraform directory)
 RESOURCE_GROUP=$(terraform output -raw resource_group_name)
+APP_SERVICE=$(terraform output -raw app_service_name)
 JAVA_WEBAPP_NAME=$(terraform output -raw java_webapp_name)
 DOTNET_WEBAPP_NAME=$(terraform output -raw dotnet_webapp_name)
 NODE_WEBAPP_NAME=$(terraform output -raw node_webapp_name)
 
 # Confirm values
-echo "RG=$RESOURCE_GROUP, Java=$JAVA_WEBAPP_NAME, Dotnet=$DOTNET_WEBAPP_NAME, Node=$NODE_WEBAPP_NAME"
+echo "RG=$RESOURCE_GROUP, APP_SERV=$APP_SERVICE, Java=$JAVA_WEBAPP_NAME, Dotnet=$DOTNET_WEBAPP_NAME, Node=$NODE_WEBAPP_NAME"
 
 # Wait for App Service to be fully ready for deployments
 echo -e "${YELLOW}Waiting for App Services to be fully initialized...${NC}"
@@ -138,13 +139,6 @@ else
     fi
 fi
 
-echo -e "${GREEN}Deployment completed successfully!${NC}"
-echo -e "${CYAN}Resources deployed:${NC}"
-echo -e "  Resource Group: $RESOURCE_GROUP"
-echo -e "  Java Web App: $JAVA_WEBAPP_NAME (https://$JAVA_WEBAPP_NAME.azurewebsites.net)"
-echo -e "  .NET Web App: $DOTNET_WEBAPP_NAME (https://$DOTNET_WEBAPP_NAME.azurewebsites.net)"
-echo -e "  Node.js Web App: $NODE_WEBAPP_NAME (https://$NODE_WEBAPP_NAME.azurewebsites.net)"
-echo -e "${CYAN}Note: Application Insights is configured for all web apps with private connectivity through AMPLS.${NC}"
 
 # Deploy Node.js Application
 cd ../
@@ -155,19 +149,19 @@ if [ ! -d "node-ai-demo" ]; then
     git clone https://github.com/tiagojfernandes/node-ai-demo.git
 fi
 
-cd node-ai-demo
+# Install dependencies
+cd node-ai-demo && npm install
 
-# Create deployment package (exclude dev files and include all necessary files)
-echo -e "${CYAN}Preparing Node.js deployment...${NC}"
-zip -r ../node-app.zip . -x ".git/*" "*.md" ".gitignore" "node_modules/*"
+# Fix security vulnerabilities  
+npm audit fix --force
 
-# Deploy Node.js application with proper settings
-echo -e "${CYAN}Deploying Node.js application to Azure App Service...${NC}"
-az webapp deploy \
-  --resource-group $RESOURCE_GROUP \
+# 3. Deploy to Azure
+az webapp up \
   --name $NODE_WEBAPP_NAME \
-  --src-path ../node-app.zip \
-  --type zip
+  --resource-group $RESOURCE_GROUP \
+  --plan $APP_SERVICE \
+  --runtime "NODE|20-lts" \
+  --sku B1
 
 # Wait a moment for deployment to process
 echo -e "${YELLOW}Waiting for Node.js deployment to complete...${NC}"
