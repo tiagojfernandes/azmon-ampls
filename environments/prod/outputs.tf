@@ -136,6 +136,11 @@ output "ubuntu_vm_autoshutdown_schedule_id" {
 }
 
 # App Service outputs
+output "app_service_plan_name" {
+  description = "Name of the App Service Plan"
+  value       = module.appservice.plan_name
+}
+
 output "java_webapp_name" {
   description = "Name of the Java web app"
   value       = module.appservice.java_webapp_name

@@ -41,7 +41,7 @@ echo -e "${GREEN}Terraform deployment completed successfully!${NC}"
 
 # Capture outputs into variables (while still in the terraform directory)
 RESOURCE_GROUP=$(terraform output -raw resource_group_name)
-APP_SERVICE=$(terraform output -raw app_service_name)
+APP_SERVICE=$(terraform output -raw app_service_plan_name)
 JAVA_WEBAPP_NAME=$(terraform output -raw java_webapp_name)
 DOTNET_WEBAPP_NAME=$(terraform output -raw dotnet_webapp_name)
 NODE_WEBAPP_NAME=$(terraform output -raw node_webapp_name)
@@ -149,19 +149,26 @@ if [ ! -d "node-ai-demo" ]; then
     git clone https://github.com/tiagojfernandes/node-ai-demo.git
 fi
 
-# Install dependencies
-cd node-ai-demo && npm install
+cd node-ai-demo
+
+# Install dependencies locally first to ensure they're available
+echo -e "${CYAN}Installing Node.js dependencies...${NC}"
+npm install
 
 # Fix security vulnerabilities  
 npm audit fix --force
 
-# 3. Deploy to Azure
-az webapp up \
-  --name $NODE_WEBAPP_NAME \
+# Create a deployment package with node_modules included
+echo -e "${CYAN}Creating deployment package...${NC}"
+zip -r ../node-app.zip . -x "*.git*" "*.vscode*" "README.md"
+
+# Deploy using az webapp deploy (which preserves node_modules)
+echo -e "${CYAN}Deploying to Azure App Service...${NC}"
+az webapp deploy \
   --resource-group $RESOURCE_GROUP \
-  --plan $APP_SERVICE \
-  --runtime "NODE|20-lts" \
-  --sku B1
+  --name $NODE_WEBAPP_NAME \
+  --src-path ../node-app.zip \
+  --type zip
 
 # Wait a moment for deployment to process
 echo -e "${YELLOW}Waiting for Node.js deployment to complete...${NC}"
