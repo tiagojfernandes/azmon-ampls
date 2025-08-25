@@ -160,7 +160,7 @@ resource "azurerm_virtual_machine_extension" "windows_vm_custom_script" {
     fileUris = [
       "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-dotnet-app-winvm.ps1"
     ]
-    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File install-dotnet-app.ps1 -ConnectionString \"${var.application_insights_connection_string}\""
+    commandToExecute = "powershell -ExecutionPolicy Unrestricted -File install-dotnet-app-winvm.ps1 -ConnectionString \"${var.application_insights_connection_string}\""
   })
 
   depends_on = [
@@ -198,7 +198,7 @@ resource "azurerm_virtual_machine_extension" "ubuntu_vm_custom_script" {
     fileUris = [
       "https://raw.githubusercontent.com/tiagojfernandes/azmon-ampls/main/scripts/install-python-apps-linuxvm.sh?t=${timestamp()}"
     ]
-    commandToExecute = "bash install-python-apps.sh \"${var.application_insights_connection_string}\""
+    commandToExecute = "bash install-python-apps-linuxvm.sh \"${var.application_insights_connection_string}\""
   })
 
   depends_on = [
