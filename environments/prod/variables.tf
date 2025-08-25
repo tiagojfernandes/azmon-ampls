@@ -16,6 +16,12 @@ variable "resource_group_name" {
   default     = "rg-azmon-ampls-lab"
 }
 
+variable "log_analytics_workspace_name" {
+  description = "Name of the Log Analytics Workspace"
+  type        = string
+  default     = "law-azmon-ampls-lab"
+}
+
 variable "location" {
   description = "Azure region for resources"
   type        = string
@@ -26,6 +32,12 @@ variable "admin_username" {
   description = "Admin username for VMs"
   type        = string
   default     = "azureuser"
+}
+
+variable "admin_password" {
+  description = "Admin password for VMs"
+  type        = string
+  sensitive   = true
 }
 
 variable "vm_size" {

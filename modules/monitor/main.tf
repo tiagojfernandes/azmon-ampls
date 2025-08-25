@@ -2,7 +2,7 @@
 
 # Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "main" {
-  name                       = "${var.prefix}-law"
+  name                       = var.log_analytics_workspace_name != null ? var.log_analytics_workspace_name : "${var.prefix}-law"
   location                   = var.location
   resource_group_name        = var.resource_group_name
   sku                        = var.log_analytics_sku

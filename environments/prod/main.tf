@@ -51,9 +51,10 @@ module "network" {
 module "monitor" {
   source = "../../modules/monitor"
 
-  prefix              = "azmon"  # Fixed prefix for infrastructure
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
+  prefix                        = "azmon"  # Fixed prefix for infrastructure
+  location                      = var.location
+  resource_group_name           = azurerm_resource_group.main.name
+  log_analytics_workspace_name  = var.log_analytics_workspace_name
 
   ampls_subnet_id = module.network.hub_ampls_subnet_id
   hub_vnet_id     = module.network.hub_vnet_id
@@ -89,6 +90,7 @@ module "compute" {
   application_insights_connection_string = module.monitor.connection_string
 
   admin_username    = var.admin_username
+  admin_password    = var.admin_password
   vm_size           = var.vm_size
   enable_public_ips = var.enable_public_ips
 
