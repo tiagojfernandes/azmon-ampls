@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Azure Monitor AMPLS Lab Deployment Script
-# Usage: ./deploy.sh [custom-prefix]
-# Example: ./deploy.sh "mylab" (creates app-mylab-java, app-mylab-dotnet)
+# Usage: ./init-lab.sh [custom-prefix]
+# Example: ./init-lab.sh "mylab" (creates app-mylab-java, app-mylab-dotnet)
 # If no prefix provided, uses azmon-MMDD-HHMM to avoid conflicts
 
 set -e
@@ -78,7 +78,7 @@ echo ""
 
 # Prompt for deployment parameters
 prompt_input "Enter the name for the Azure Resource Group" RESOURCE_GROUP
-prompt_input "Enter the Azure location supported by Sentinel (e.g., westeurope)" LOCATION
+prompt_input "Enter the Azure location (e.g., uksouth)" LOCATION
 prompt_input "Enter the name for the Log Analytics Workspace" WORKSPACE_NAME
 # Prompt for timezone for auto-shutdown configuration
 echo ""
@@ -246,4 +246,4 @@ echo -e "${GREEN}All deployments completed successfully!${NC}"
 echo -e "${CYAN}Application URLs:${NC}"
 echo -e "  Java:    https://$JAVA_WEBAPP_NAME.azurewebsites.net"
 echo -e "  .NET:    https://$DOTNET_WEBAPP_NAME.azurewebsites.net"
-echo -e "  Node.js: https://$NODE_WEBAPP_NAME.azurewebsites.net/healthz"
+echo -e "  Node.js: https://$NODE_WEBAPP_NAME.azurewebsites.net"

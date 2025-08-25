@@ -38,6 +38,10 @@ resource "azurerm_subnet" "hub_ampls" {
   address_prefixes     = var.hub_ampls_subnet_address_prefixes
 
   private_endpoint_network_policies = "Disabled"
+
+  depends_on = [
+    azurerm_virtual_network.hub
+  ]
 }
 
 # Spoke subnets
@@ -46,6 +50,10 @@ resource "azurerm_subnet" "windows_spoke_vms" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.windows_spoke.name
   address_prefixes     = var.windows_spoke_vm_subnet_address_prefixes
+
+  depends_on = [
+    azurerm_virtual_network.windows_spoke
+  ]
 }
 
 resource "azurerm_subnet" "ubuntu_spoke_vms" {
@@ -53,6 +61,10 @@ resource "azurerm_subnet" "ubuntu_spoke_vms" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.ubuntu_spoke.name
   address_prefixes     = var.ubuntu_spoke_vm_subnet_address_prefixes
+
+  depends_on = [
+    azurerm_virtual_network.ubuntu_spoke
+  ]
 }
 
 # VNet Peering Hub to Windows Spoke
@@ -66,11 +78,6 @@ resource "azurerm_virtual_network_peering" "hub_to_windows_spoke" {
   allow_forwarded_traffic      = true
   allow_gateway_transit        = false
   use_remote_gateways          = false
-  
-  depends_on = [
-    azurerm_virtual_network.hub,
-    azurerm_virtual_network.windows_spoke
-  ]
 }
 
 # VNet Peering Windows Spoke to Hub
@@ -84,11 +91,6 @@ resource "azurerm_virtual_network_peering" "windows_spoke_to_hub" {
   allow_forwarded_traffic      = true
   allow_gateway_transit        = false
   use_remote_gateways          = false
-  
-  depends_on = [
-    azurerm_virtual_network.hub,
-    azurerm_virtual_network.windows_spoke
-  ]
 }
 
 # VNet Peering Hub to Ubuntu Spoke
@@ -102,11 +104,6 @@ resource "azurerm_virtual_network_peering" "hub_to_ubuntu_spoke" {
   allow_forwarded_traffic      = true
   allow_gateway_transit        = false
   use_remote_gateways          = false
-  
-  depends_on = [
-    azurerm_virtual_network.hub,
-    azurerm_virtual_network.ubuntu_spoke
-  ]
 }
 
 # VNet Peering Ubuntu Spoke to Hub
@@ -120,11 +117,6 @@ resource "azurerm_virtual_network_peering" "ubuntu_spoke_to_hub" {
   allow_forwarded_traffic      = true
   allow_gateway_transit        = false
   use_remote_gateways          = false
-  
-  depends_on = [
-    azurerm_virtual_network.hub,
-    azurerm_virtual_network.ubuntu_spoke
-  ]
 }
 
 # Network Security Group for VMs
@@ -211,6 +203,10 @@ resource "azurerm_subnet" "hub_appsvc_integration" {
       name = "Microsoft.Web/serverFarms"
     }
   }
+
+  depends_on = [
+    azurerm_virtual_network.hub
+  ]
 }
 
 
