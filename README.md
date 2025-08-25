@@ -1,11 +1,32 @@
 # Azure Monitor AMPLS Lab Environment
 
-## ⚠️ UNDER DEVELOPMENT ⚠️
+This comprehensive lab demonstrates Azure Monitor Private Link Scope (AMPLS) implementation with a hub-and-spoke network topology, featuring:
 
-**This project is currently under active development and is not ready for production use.**
+- **Hub-and-Spoke Network Architecture**: Central hub VNet with Windows and Ubuntu spoke VNets
+- **Azure Monitor Private Link Scope**: Private-only ingestion and query for monitoring data  
+- **Multi-Platform Applications**: Java, .NET, and Node.js web applications on App Service
+- **Virtual Machine Monitoring**: Windows and Ubuntu VMs with Azure Monitor Agent
+- **Interactive Setup**: User-friendly deployment script with guided configuration
 
-Please check back later for the complete documentation and implementation.
-- **Agent Extensions**: Automated AMA deployment
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        Hub VNet                             │
+│  ┌─────────────────┐    ┌─────────────────┐                │
+│  │  ampls-subnet   │    │ snet-appsvc-int │                │
+│  │                 │    │                 │                │
+│  │ [AMPLS Private  │    │ [App Service    │                │
+│  │  Endpoints]     │    │  Integration]   │                │
+│  └─────────────────┘    └─────────────────┘                │
+└─────────────┬───────────────────────┬─────────────────────┘
+              │                       │
+       ┌──────┴────────┐       ┌──────┴────────┐
+       │ Windows Spoke │       │ Ubuntu Spoke  │
+       │     VNet      │       │     VNet      │
+       │ [Windows VM]  │       │ [Ubuntu VM]   │
+       └───────────────┘       └───────────────┘
+```
 
 ## Prerequisites
 
@@ -14,6 +35,35 @@ Please check back later for the complete documentation and implementation.
 - Appropriate Azure permissions to create resources
 
 ## Quick Start
+
+### Interactive Deployment (Recommended)
+
+1. **Clone the repository and navigate to project root**:
+   ```bash
+   git clone https://github.com/tiagojfernandes/azmon-ampls.git
+   cd azmon-ampls
+   ```
+
+2. **Run the interactive setup script**:
+   ```bash
+   # The script will guide you through configuration
+   ./init-lab.sh
+   ```
+
+   The script will prompt you for:
+   - Resource Group name
+   - Azure region
+   - Log Analytics Workspace name  
+   - Timezone for VMs
+   - VM administrator password
+
+3. **Wait for deployment to complete**:
+   - Infrastructure provisioning (~15-20 minutes)
+   - Application deployment (~5-10 minutes)
+
+### Manual Deployment
+
+If you prefer manual deployment:
 
 1. **Navigate to the production environment**:
    ```bash
@@ -25,76 +75,94 @@ Please check back later for the complete documentation and implementation.
    terraform init
    ```
 
-3. **Review and customize variables** (optional):
+3. **Create and customize terraform.tfvars**:
    ```bash
-   # Copy and edit terraform.tfvars if needed
    cp terraform.tfvars.example terraform.tfvars
+   # Edit terraform.tfvars with your preferred values
    ```
 
-4. **Plan the deployment**:
+4. **Plan and deploy**:
    ```bash
    terraform plan
-   ```
-
-5. **Deploy the infrastructure**:
-   ```bash
    terraform apply
    ```
 
-6. **Get connection information**:
+5. **Deploy applications separately**:
    ```bash
-   terraform output
+   # From project root
+   cd scripts
+   ./install-appservice-java.sh <resource_group> <webapp_name> <app_service_plan>
+   ./install-appservice-dotnet.sh <resource_group> <webapp_name> <app_service_plan>
+   ./install-appservice-nodejs.sh <resource_group> <webapp_name> <app_service_plan>
    ```
 
-## Using the Deployment Scripts
-
-For easier deployment, you can use the provided scripts from the project root:
-
-```bash
-# For Linux/Mac/WSL (navigate to environments/prod first)
-cd environments/prod
-../../deploy.sh deploy
-
-# For Windows PowerShell (navigate to environments/prod first)
-cd environments/prod
-../../deploy.ps1 deploy
-```
-
 ## Configuration Details
+
+### Network Architecture
+
+**Hub-and-Spoke Topology**:
+- **Hub VNet**: Central network containing AMPLS private endpoints and App Service integration
+- **Windows Spoke VNet**: Peered to hub, contains Windows Server 2022 VM
+- **Ubuntu Spoke VNet**: Peered to hub, contains Ubuntu 22.04 LTS VM
+- **VNet Peering**: Bidirectional peering between hub and both spoke VNets
+
+### App Service Applications
+
+Three web applications are deployed to demonstrate different technology stacks:
+
+1. **Java Application**: Spring Boot application with Application Insights integration
+2. **.NET Application**: ASP.NET Core application with telemetry collection
+3. **Node.js Application**: Express.js application with custom metrics
+
+All applications:
+- Use VNet integration with the hub network
+- Send telemetry through private endpoints only
+- Connect to the same Application Insights resource
 
 ### Azure Monitor Private Link Service (AMPLS)
 
 The AMPLS is configured with:
 - **Ingestion Access Mode**: PrivateOnly - only accepts data from private networks
 - **Query Access Mode**: PrivateOnly - only allows queries from private networks
-- **Private Endpoint**: Deployed in the hub VNet with proper DNS configuration
+- **Private Endpoints**: Deployed in hub VNet for Log Analytics and Application Insights
+- **DNS Configuration**: Private DNS zones for proper name resolution
 
 ### Log Analytics Workspace
 
 The workspace is configured with:
+- **Custom Naming**: User-provided workspace name during setup
 - **Internet Ingestion**: Disabled (enforces private link only)
 - **Internet Query**: Disabled (enforces private link only)
 - **Retention**: 30 days
 - **SKU**: PerGB2018
 
-### Data Collection
+### Virtual Machine Configuration
 
-Data Collection Rules are configured to collect:
-- **Performance Counters**: CPU, Memory, Disk, Network metrics (60-second intervals)
-- **Windows Event Logs**: Application, Security, System events
-- **Syslog**: All facilities and log levels for Linux systems
-
-### Virtual Machines
-
-Both VMs are configured with:
-- **Azure Monitor Agent**: Latest version with auto-upgrade
-- **Data Collection Rule Associations**: Automatically configured
-- **Network Security Groups**: Allow RDP (3389) and SSH (22) access
-- **Public IPs**: For initial setup and testing (can be removed after deployment)
+Both VMs are automatically configured with:
+- **Azure Monitor Agent**: Latest version with auto-upgrade enabled
+- **Custom Applications**: 
+  - Windows VM: .NET application with performance counters
+  - Ubuntu VM: Python Flask applications for load simulation
+- **Data Collection Rules**: Performance counters and event logs
+- **Network Security Groups**: RDP (Windows) and SSH (Ubuntu) access
 
 ## Testing the Environment
 
-### 1. Verify Private Connectivity
+### 1. Verify Application Deployment
+
+**Check App Service Applications**:
+```bash
+# Get the App Service URLs from Terraform output
+cd environments/prod
+terraform output app_service_urls
+
+# Test each application
+curl https://<java-app-url>/actuator/health
+curl https://<dotnet-app-url>/health
+curl https://<nodejs-app-url>/health
+```
+
+### 2. Verify Private Connectivity
 
 Connect to either VM and test DNS resolution:
 
@@ -105,18 +173,19 @@ nslookup oms.opinsights.azure.com
 nslookup dc.services.visualstudio.com
 
 # Check if endpoints resolve to private IPs (10.x.x.x range)
+# Should NOT resolve to public IPs when AMPLS is working correctly
 ```
 
 **Ubuntu VM** (Bash):
 ```bash
-# Test Azure Monitor endpoint resolution
+# Test Azure Monitor endpoint resolution  
 dig oms.opinsights.azure.com
 dig dc.services.visualstudio.com
 
 # Check if endpoints resolve to private IPs (10.x.x.x range)
 ```
 
-### 2. Verify Data Ingestion
+### 3. Verify Data Ingestion
 
 In the Azure Portal:
 1. Navigate to the Log Analytics Workspace
@@ -124,28 +193,56 @@ In the Azure Portal:
 3. Run queries to verify data ingestion:
 
 ```kql
-// Check for performance data
+// Check for performance data from VMs
 Perf
 | where TimeGenerated > ago(1h)
 | summarize count() by Computer, CounterName
 
-// Check for Windows events
-Event
-| where TimeGenerated > ago(1h)
-| summarize count() by Computer, EventLevelName
+// Check for Application Insights data
+AppRequests
+| where TimeGenerated > ago(1h)  
+| summarize count() by AppRoleName, Name
 
-// Check for Syslog data
-Syslog
+// Check for custom events from applications
+AppCustomEvents
 | where TimeGenerated > ago(1h)
-| summarize count() by Computer, Facility
+| summarize count() by AppRoleName, Name
+
+// Check VM heartbeats
+Heartbeat
+| where TimeGenerated > ago(1h)
+| summarize count() by Computer, OSType
 ```
 
-### 3. Verify Private Link Status
+### 4. Verify Private Link Status
 
-Check the AMPLS status:
+Check the AMPLS configuration:
 1. Navigate to Azure Monitor Private Link Scope in the portal
-2. Verify connected resources show the Log Analytics Workspace
+2. Verify connected resources show both Log Analytics Workspace and Application Insights
 3. Check private endpoint connections are approved and connected
+4. Confirm all DNS zones are properly linked to VNets
+
+## Deployed Resources
+
+After successful deployment, you'll have:
+
+### Infrastructure
+- **3 Virtual Networks**: Hub + 2 spoke VNets with peering
+- **2 Virtual Machines**: Windows Server 2022 and Ubuntu 22.04 LTS
+- **1 App Service Plan**: Linux-based hosting 3 web applications
+- **1 Log Analytics Workspace**: With custom name and private-only access
+- **1 Application Insights**: Connected to AMPLS for private telemetry
+- **1 Azure Monitor Private Link Scope**: With private endpoints
+
+### Applications  
+- **Java Spring Boot App**: Runs on Java 17 with actuator endpoints
+- **.NET Core App**: ASP.NET Core 8.0 with health checks
+- **Node.js App**: Express.js with custom metrics and monitoring
+
+### Monitoring Configuration
+- **Azure Monitor Agents**: On both VMs with data collection rules
+- **VM Extensions**: Custom scripts for application installation  
+- **Private DNS Zones**: For Azure Monitor endpoints resolution
 
 ## Customization
 
@@ -154,27 +251,44 @@ Check the AMPLS status:
 Key variables you can customize in `environments/prod/terraform.tfvars`:
 
 ```hcl
-# Basic settings
-prefix              = "your-prefix"
-resource_group_name = "rg-your-ampls-lab"
-location           = "West Europe"
+# Basic settings - will be prompted during interactive setup
+resource_group_name         = "rg-ampls-lab"
+location                   = "East US"
+log_analytics_workspace_name = "law-my-workspace"
+timezone                   = "Eastern Standard Time"  # Windows timezone
+admin_password             = "YourStrongP@ssw0rd!"
 
-# VM settings
-admin_username    = "youradmin"
-vm_size          = "Standard_B2ms"  # Larger VMs if needed
-enable_public_ips = false          # Use false for production
+# Advanced settings (optional customization)
+prefix = "azmon"
+vm_size = "Standard_B2ms"
 
-# Network settings
-hub_vnet_address_space    = ["172.16.0.0/16"]
-spoke_vnet_address_space  = ["172.17.0.0/16"]
+# Network settings (hub-and-spoke topology)
+hub_vnet_address_space                    = ["10.0.0.0/16"]
+windows_spoke_vnet_address_space          = ["10.1.0.0/16"] 
+ubuntu_spoke_vnet_address_space           = ["10.2.0.0/16"]
+hub_ampls_subnet_address_prefixes         = ["10.0.1.0/24"]
+hub_appsvc_integration_subnet_prefixes    = ["10.0.2.0/24"]
+windows_spoke_vm_subnet_address_prefixes  = ["10.1.1.0/24"]
+ubuntu_spoke_vm_subnet_address_prefixes   = ["10.2.1.0/24"]
 
 # Tags
 tags = {
   Environment = "Lab"
-  Project     = "Your Project"
+  Project     = "Azure Monitor AMPLS"
   Owner       = "Your Name"
 }
 ```
+
+### Script Customization
+
+The deployment includes modular scripts in the `scripts/` directory:
+
+- **`init-lab.sh`**: Main orchestration script with user prompts
+- **`install-appservice-java.sh`**: Deploys Spring Boot application
+- **`install-appservice-dotnet.sh`**: Deploys ASP.NET Core application  
+- **`install-appservice-nodejs.sh`**: Deploys Express.js application
+- **`install-dotnet-app-winvm.ps1`**: Windows VM application setup
+- **`install-python-apps-linuxvm.sh`**: Ubuntu VM application setup
 
 ### Adding New Environments
 
