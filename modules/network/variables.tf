@@ -31,6 +31,12 @@ variable "ubuntu_spoke_vnet_address_space" {
   default     = ["10.2.0.0/16"]
 }
 
+variable "appservice_spoke_vnet_address_space" {
+  description = "Address space for the App Service spoke virtual network"
+  type        = list(string)
+  default     = ["10.3.0.0/16"]
+}
+
 variable "hub_ampls_subnet_address_prefixes" {
   description = "Address prefixes for the AMPLS subnet in hub VNet"
   type        = list(string)
@@ -49,13 +55,21 @@ variable "ubuntu_spoke_vm_subnet_address_prefixes" {
   default     = ["10.2.1.0/24"]
 }
 
+variable "appservice_spoke_integration_subnet_address_prefixes" {
+  description = "Address prefixes for the App Service integration subnet in App Service spoke VNet"
+  type        = list(string)
+  default     = ["10.3.1.0/24"]
+}
+
 variable "tags" {
   description = "Tags to apply to all resources"
   type        = map(string)
   default     = {}
 }
 
+# Legacy variable - will be removed after migration
 variable "hub_appsvc_integration_subnet_prefixes" {
-  type = list(string)
-  # e.g. ["10.0.20.0/26"]
+  description = "DEPRECATED: Address prefixes for App Service integration subnet in hub VNet"
+  type        = list(string)
+  default     = ["10.0.2.0/24"]  # Providing default to avoid breaking existing deployments
 }

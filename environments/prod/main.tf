@@ -38,11 +38,15 @@ module "network" {
   hub_vnet_address_space               = var.hub_vnet_address_space
   windows_spoke_vnet_address_space     = var.windows_spoke_vnet_address_space
   ubuntu_spoke_vnet_address_space      = var.ubuntu_spoke_vnet_address_space
+  appservice_spoke_vnet_address_space  = var.appservice_spoke_vnet_address_space
+  
   hub_ampls_subnet_address_prefixes    = var.hub_ampls_subnet_address_prefixes
   windows_spoke_vm_subnet_address_prefixes = var.windows_spoke_vm_subnet_address_prefixes
   ubuntu_spoke_vm_subnet_address_prefixes  = var.ubuntu_spoke_vm_subnet_address_prefixes
+  appservice_spoke_integration_subnet_address_prefixes = var.appservice_spoke_integration_subnet_address_prefixes
 
-  hub_appsvc_integration_subnet_prefixes = ["10.0.20.0/26"] # pick an unused range in hub
+  # Legacy hub App Service integration (keeping temporarily for safe migration)
+  hub_appsvc_integration_subnet_prefixes = ["10.0.20.0/26"]
 
   tags = var.tags
 }
@@ -60,6 +64,7 @@ module "monitor" {
   hub_vnet_id     = module.network.hub_vnet_id
   windows_spoke_vnet_id = module.network.windows_spoke_vnet_id
   ubuntu_spoke_vnet_id  = module.network.ubuntu_spoke_vnet_id
+  appservice_spoke_vnet_id = module.network.appservice_spoke_vnet_id
 
   log_analytics_sku             = var.log_analytics_sku
   log_analytics_retention_days  = var.log_analytics_retention_days

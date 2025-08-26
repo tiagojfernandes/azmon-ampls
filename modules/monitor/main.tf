@@ -120,18 +120,23 @@ resource "azurerm_private_endpoint" "ampls" {
     azurerm_private_dns_zone_virtual_network_link.monitor_hub,
     azurerm_private_dns_zone_virtual_network_link.monitor_windows_spoke,
     azurerm_private_dns_zone_virtual_network_link.monitor_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.monitor_appservice_spoke,
     azurerm_private_dns_zone_virtual_network_link.oms_hub,
     azurerm_private_dns_zone_virtual_network_link.oms_windows_spoke,
     azurerm_private_dns_zone_virtual_network_link.oms_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.oms_appservice_spoke,
     azurerm_private_dns_zone_virtual_network_link.ods_hub,
     azurerm_private_dns_zone_virtual_network_link.ods_windows_spoke,
     azurerm_private_dns_zone_virtual_network_link.ods_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.ods_appservice_spoke,
     azurerm_private_dns_zone_virtual_network_link.agentsvc_hub,
     azurerm_private_dns_zone_virtual_network_link.agentsvc_windows_spoke,
     azurerm_private_dns_zone_virtual_network_link.agentsvc_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.agentsvc_appservice_spoke,
     azurerm_private_dns_zone_virtual_network_link.blob_hub,
     azurerm_private_dns_zone_virtual_network_link.blob_windows_spoke,
-    azurerm_private_dns_zone_virtual_network_link.blob_ubuntu_spoke
+    azurerm_private_dns_zone_virtual_network_link.blob_ubuntu_spoke,
+    azurerm_private_dns_zone_virtual_network_link.blob_appservice_spoke
   ]
 
   tags = var.tags
@@ -327,6 +332,72 @@ resource "azurerm_private_dns_zone_virtual_network_link" "blob_ubuntu_spoke" {
   resource_group_name   = var.resource_group_name
   private_dns_zone_name = azurerm_private_dns_zone.blob.name
   virtual_network_id    = var.ubuntu_spoke_vnet_id
+  
+  depends_on = [
+    azurerm_private_dns_zone.blob
+  ]
+  
+  tags = var.tags
+}
+
+# Link Private DNS Zones to App Service Spoke VNet
+resource "azurerm_private_dns_zone_virtual_network_link" "monitor_appservice_spoke" {
+  name                  = "appservice-spoke-link"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = azurerm_private_dns_zone.monitor.name
+  virtual_network_id    = var.appservice_spoke_vnet_id
+  
+  depends_on = [
+    azurerm_private_dns_zone.monitor
+  ]
+  
+  tags = var.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "oms_appservice_spoke" {
+  name                  = "appservice-spoke-link"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = azurerm_private_dns_zone.oms.name
+  virtual_network_id    = var.appservice_spoke_vnet_id
+  
+  depends_on = [
+    azurerm_private_dns_zone.oms
+  ]
+  
+  tags = var.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "ods_appservice_spoke" {
+  name                  = "appservice-spoke-link"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = azurerm_private_dns_zone.ods.name
+  virtual_network_id    = var.appservice_spoke_vnet_id
+  
+  depends_on = [
+    azurerm_private_dns_zone.ods
+  ]
+  
+  tags = var.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "agentsvc_appservice_spoke" {
+  name                  = "appservice-spoke-link"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = azurerm_private_dns_zone.agentsvc.name
+  virtual_network_id    = var.appservice_spoke_vnet_id
+  
+  depends_on = [
+    azurerm_private_dns_zone.agentsvc
+  ]
+  
+  tags = var.tags
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "blob_appservice_spoke" {
+  name                  = "appservice-spoke-link"
+  resource_group_name   = var.resource_group_name
+  private_dns_zone_name = azurerm_private_dns_zone.blob.name
+  virtual_network_id    = var.appservice_spoke_vnet_id
   
   depends_on = [
     azurerm_private_dns_zone.blob

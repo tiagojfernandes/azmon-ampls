@@ -39,6 +39,11 @@ variable "ubuntu_spoke_vnet_id" {
   type        = string
 }
 
+variable "appservice_spoke_vnet_id" {
+  description = "ID of the App Service spoke virtual network"
+  type        = string
+}
+
 variable "log_analytics_sku" {
   description = "SKU for the Log Analytics Workspace"
   type        = string

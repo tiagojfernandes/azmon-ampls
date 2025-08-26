@@ -30,6 +30,16 @@ resource "azurerm_virtual_network" "ubuntu_spoke" {
   tags = var.tags
 }
 
+# App Service Spoke Virtual Network (where App Service integration will be deployed)
+resource "azurerm_virtual_network" "appservice_spoke" {
+  name                = "${var.prefix}-appservice-spoke-vnet"
+  address_space       = var.appservice_spoke_vnet_address_space
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  tags = var.tags
+}
+
 # Hub subnets
 resource "azurerm_subnet" "hub_ampls" {
   name                 = "ampls-subnet"
@@ -64,6 +74,26 @@ resource "azurerm_subnet" "ubuntu_spoke_vms" {
 
   depends_on = [
     azurerm_virtual_network.ubuntu_spoke
+  ]
+}
+
+# App Service spoke subnet
+resource "azurerm_subnet" "appservice_spoke_integration" {
+  name                 = "appservice-integration-subnet"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.appservice_spoke.name
+  address_prefixes     = var.appservice_spoke_integration_subnet_address_prefixes
+
+  # Must be delegated for App Service integration
+  delegation {
+    name = "appservice-delegation"
+    service_delegation {
+      name = "Microsoft.Web/serverFarms"
+    }
+  }
+
+  depends_on = [
+    azurerm_virtual_network.appservice_spoke
   ]
 }
 
@@ -111,6 +141,32 @@ resource "azurerm_virtual_network_peering" "ubuntu_spoke_to_hub" {
   name                      = "ubuntu-spoke-to-hub"
   resource_group_name       = var.resource_group_name
   virtual_network_name      = azurerm_virtual_network.ubuntu_spoke.name
+  remote_virtual_network_id = azurerm_virtual_network.hub.id
+  
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  allow_gateway_transit        = false
+  use_remote_gateways          = false
+}
+
+# VNet Peering Hub to App Service Spoke
+resource "azurerm_virtual_network_peering" "hub_to_appservice_spoke" {
+  name                      = "hub-to-appservice-spoke"
+  resource_group_name       = var.resource_group_name
+  virtual_network_name      = azurerm_virtual_network.hub.name
+  remote_virtual_network_id = azurerm_virtual_network.appservice_spoke.id
+  
+  allow_virtual_network_access = true
+  allow_forwarded_traffic      = true
+  allow_gateway_transit        = false
+  use_remote_gateways          = false
+}
+
+# VNet Peering App Service Spoke to Hub
+resource "azurerm_virtual_network_peering" "appservice_spoke_to_hub" {
+  name                      = "appservice-spoke-to-hub"
+  resource_group_name       = var.resource_group_name
+  virtual_network_name      = azurerm_virtual_network.appservice_spoke.name
   remote_virtual_network_id = azurerm_virtual_network.hub.id
   
   allow_virtual_network_access = true

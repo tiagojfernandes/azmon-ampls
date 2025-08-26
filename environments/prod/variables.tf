@@ -88,6 +88,18 @@ variable "ubuntu_spoke_vm_subnet_address_prefixes" {
   default     = ["10.2.1.0/24"]
 }
 
+variable "appservice_spoke_vnet_address_space" {
+  description = "Address space for the App Service spoke virtual network"
+  type        = list(string)
+  default     = ["10.3.0.0/16"]
+}
+
+variable "appservice_spoke_integration_subnet_address_prefixes" {
+  description = "Address prefixes for the App Service integration subnet in App Service spoke VNet"
+  type        = list(string)
+  default     = ["10.3.1.0/24"]
+}
+
 variable "log_analytics_sku" {
   description = "SKU for the Log Analytics Workspace"
   type        = string

@@ -28,6 +28,16 @@ output "ubuntu_spoke_vnet_name" {
   value       = azurerm_virtual_network.ubuntu_spoke.name
 }
 
+output "appservice_spoke_vnet_id" {
+  description = "ID of the App Service spoke virtual network"
+  value       = azurerm_virtual_network.appservice_spoke.id
+}
+
+output "appservice_spoke_vnet_name" {
+  description = "Name of the App Service spoke virtual network"
+  value       = azurerm_virtual_network.appservice_spoke.name
+}
+
 output "hub_ampls_subnet_id" {
   description = "ID of the AMPLS subnet in hub VNet"
   value       = azurerm_subnet.hub_ampls.id
@@ -48,6 +58,14 @@ output "vm_nsg_id" {
   value       = azurerm_network_security_group.vm_nsg.id
 }
 
+# New App Service spoke subnet output
 output "appservice_integration_subnet_id" {
-  value = azurerm_subnet.hub_appsvc_integration.id
+  description = "ID of the App Service integration subnet in App Service spoke VNet"
+  value       = azurerm_subnet.appservice_spoke_integration.id
+}
+
+# Legacy output - will be removed after migration
+output "hub_appservice_integration_subnet_id" {
+  description = "DEPRECATED: ID of the App Service integration subnet in hub VNet"
+  value       = azurerm_subnet.hub_appsvc_integration.id
 }
