@@ -245,24 +245,4 @@ resource "azurerm_subnet_network_security_group_association" "ubuntu_vm_subnet_n
   ]
 }
 
-# App Service VNet Integration subnet (App Service Spoke)
-resource "azurerm_subnet" "appservice_spoke_integration" {
-  name                 = "appservice-integration-subnet"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.appservice_spoke.name
-  address_prefixes     = var.appservice_spoke_integration_subnet_address_prefixes
-
-  # Must be delegated for App Service integration
-  delegation {
-    name = "appservice-delegation"
-    service_delegation {
-      name = "Microsoft.Web/serverFarms"
-    }
-  }
-
-  depends_on = [
-    azurerm_virtual_network.appservice_spoke
-  ]
-}
-
 
