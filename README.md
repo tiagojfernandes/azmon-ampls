@@ -2,7 +2,7 @@
 
 This comprehensive lab demonstrates Azure Monitor Private Link Scope (AMPLS) implementation with a hub-and-spoke network topology, featuring:
 
-- **Hub-and-Spoke Network Architecture**: Central hub VNet with Windows and Ubuntu spoke VNets
+- **Hub-and-Spoke Network Architecture**: Central hub VNet with Windows, Ubuntu, and App Service spoke VNets
 - **Azure Monitor Private Link Scope**: Private-only ingestion and query for monitoring data  
 - **Multi-Platform Applications**: Java, .NET, and Node.js web applications on App Service
 - **Virtual Machine Monitoring**: Windows and Ubuntu VMs with Azure Monitor Agent
@@ -13,19 +13,21 @@ This comprehensive lab demonstrates Azure Monitor Private Link Scope (AMPLS) imp
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                        Hub VNet                             │
-│  ┌─────────────────┐    ┌─────────────────┐                │
-│  │  ampls-subnet   │    │ snet-appsvc-int │                │
-│  │                 │    │                 │                │
-│  │ [AMPLS Private  │    │ [App Service    │                │
-│  │  Endpoints]     │    │  Integration]   │                │
-│  └─────────────────┘    └─────────────────┘                │
+│                    (10.0.0.0/16)                           │
+│  ┌─────────────────────────────────────────────────────────┐ │
+│  │              ampls-subnet                               │ │
+│  │          [AMPLS Private Endpoints]                      │ │
+│  └─────────────────────────────────────────────────────────┘ │
 └─────────────┬───────────────────────┬─────────────────────┘
               │                       │
-       ┌──────┴────────┐       ┌──────┴────────┐
-       │ Windows Spoke │       │ Ubuntu Spoke  │
-       │     VNet      │       │     VNet      │
-       │ [Windows VM]  │       │ [Ubuntu VM]   │
-       └───────────────┘       └───────────────┘
+       ┌──────┴────────┐       ┌──────┴────────┐       ┌─────────────────┐
+       │ Windows Spoke │       │ Ubuntu Spoke  │       │ App Service     │
+       │     VNet      │       │     VNet      │       │    Spoke VNet   │
+       │ (10.1.0.0/16) │       │ (10.2.0.0/16) │       │ (10.3.0.0/16)   │
+       │               │       │               │       │                 │
+       │ [Windows VM]  │       │ [Ubuntu VM]   │       │ [App Service    │
+       │               │       │               │       │  Integration]   │
+       └───────────────┘       └───────────────┘       └─────────────────┘
 ```
 
 ## Prerequisites
@@ -101,10 +103,17 @@ If you prefer manual deployment:
 ### Network Architecture
 
 **Hub-and-Spoke Topology**:
-- **Hub VNet**: Central network containing AMPLS private endpoints and App Service integration
+- **Hub VNet**: Central network containing AMPLS private endpoints
 - **Windows Spoke VNet**: Peered to hub, contains Windows Server 2022 VM
-- **Ubuntu Spoke VNet**: Peered to hub, contains Ubuntu 22.04 LTS VM
-- **VNet Peering**: Bidirectional peering between hub and both spoke VNets
+- **Ubuntu Spoke VNet**: Peered to hub, contains Ubuntu 22.04 LTS VM  
+- **App Service Spoke VNet**: Peered to hub, provides VNet integration for App Service applications
+- **VNet Peering**: Bidirectional peering between hub and all three spoke VNets
+
+**Architectural Benefits**:
+- **Separation of Concerns**: Dedicated spoke VNet for App Service provides network isolation
+- **Scalability**: App Service spoke can be expanded independently without affecting other workloads
+- **Security**: Network segmentation reduces blast radius and allows granular network policies
+- **Flexibility**: Future App Services can leverage the same spoke VNet infrastructure
 
 ### App Service Applications
 
@@ -115,7 +124,8 @@ Three web applications are deployed to demonstrate different technology stacks:
 3. **Node.js Application**: Express.js application with custom metrics
 
 All applications:
-- Use VNet integration with the hub network
+- Use VNet integration with the dedicated App Service spoke VNet
+- Access Azure Monitor services through VNet peering to hub with AMPLS private endpoints
 - Send telemetry through private endpoints only
 - Connect to the same Application Insights resource
 
@@ -227,7 +237,7 @@ Check the AMPLS configuration:
 After successful deployment, you'll have:
 
 ### Infrastructure
-- **3 Virtual Networks**: Hub + 2 spoke VNets with peering
+- **4 Virtual Networks**: Hub + 3 spoke VNets with peering (Windows, Ubuntu, App Service)
 - **2 Virtual Machines**: Windows Server 2022 and Ubuntu 22.04 LTS
 - **1 App Service Plan**: Linux-based hosting 3 web applications
 - **1 Log Analytics Workspace**: With custom name and private-only access
@@ -266,8 +276,9 @@ vm_size = "Standard_B2ms"
 hub_vnet_address_space                    = ["10.0.0.0/16"]
 windows_spoke_vnet_address_space          = ["10.1.0.0/16"] 
 ubuntu_spoke_vnet_address_space           = ["10.2.0.0/16"]
+appservice_spoke_vnet_address_space       = ["10.3.0.0/16"]
 hub_ampls_subnet_address_prefixes         = ["10.0.1.0/24"]
-hub_appsvc_integration_subnet_prefixes    = ["10.0.2.0/24"]
+appservice_spoke_integration_subnet_address_prefixes = ["10.3.1.0/24"]
 windows_spoke_vm_subnet_address_prefixes  = ["10.1.1.0/24"]
 ubuntu_spoke_vm_subnet_address_prefixes   = ["10.2.1.0/24"]
 
