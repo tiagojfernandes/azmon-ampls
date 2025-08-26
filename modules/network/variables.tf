@@ -66,10 +66,3 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
-
-# Legacy variable - will be removed after migration
-variable "hub_appsvc_integration_subnet_prefixes" {
-  description = "DEPRECATED: Address prefixes for App Service integration subnet in hub VNet"
-  type        = list(string)
-  default     = ["10.0.2.0/24"]  # Providing default to avoid breaking existing deployments
-}

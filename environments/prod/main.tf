@@ -45,9 +45,6 @@ module "network" {
   ubuntu_spoke_vm_subnet_address_prefixes  = var.ubuntu_spoke_vm_subnet_address_prefixes
   appservice_spoke_integration_subnet_address_prefixes = var.appservice_spoke_integration_subnet_address_prefixes
 
-  # Legacy hub App Service integration (keeping temporarily for safe migration)
-  hub_appsvc_integration_subnet_prefixes = ["10.0.20.0/26"]
-
   tags = var.tags
 }
 

@@ -58,14 +58,8 @@ output "vm_nsg_id" {
   value       = azurerm_network_security_group.vm_nsg.id
 }
 
-# New App Service spoke subnet output
+# App Service integration subnet in App Service spoke VNet
 output "appservice_integration_subnet_id" {
   description = "ID of the App Service integration subnet in App Service spoke VNet"
   value       = azurerm_subnet.appservice_spoke_integration.id
-}
-
-# Legacy output - will be removed after migration
-output "hub_appservice_integration_subnet_id" {
-  description = "DEPRECATED: ID of the App Service integration subnet in hub VNet"
-  value       = azurerm_subnet.hub_appsvc_integration.id
 }
