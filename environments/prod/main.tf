@@ -117,7 +117,7 @@ module "appservice" {
   location            = var.location
   resource_group_name = azurerm_resource_group.main.name
 
-  plan_sku            = "S1"  # B1+ required; S1 is a good default
+  plan_sku            = "B2"  # Basic B2: 2 cores, 3.5GB RAM, dev/test pricing
   integration_subnet_id = module.network.appservice_integration_subnet_id
 
   log_analytics_workspace_id    = module.monitor.log_analytics_workspace_id
