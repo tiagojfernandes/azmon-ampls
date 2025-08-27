@@ -117,6 +117,9 @@ resource "azurerm_private_endpoint" "ampls" {
     azurerm_private_dns_zone.agentsvc,
     azurerm_private_dns_zone.blob,
     azurerm_monitor_private_link_scope.main,
+    azurerm_monitor_private_link_scoped_service.law,
+    azurerm_monitor_private_link_scoped_service.appinsights,
+    azurerm_monitor_private_link_scoped_service.dce,
     azurerm_private_dns_zone_virtual_network_link.monitor_hub,
     azurerm_private_dns_zone_virtual_network_link.monitor_windows_spoke,
     azurerm_private_dns_zone_virtual_network_link.monitor_ubuntu_spoke,
@@ -425,8 +428,7 @@ resource "azurerm_monitor_private_link_scoped_service" "dce" {
 
   depends_on = [
     azurerm_monitor_private_link_scope.main,
-    azurerm_monitor_data_collection_endpoint.main,
-    azurerm_private_endpoint.ampls
+    azurerm_monitor_data_collection_endpoint.main
   ]
 }
 
